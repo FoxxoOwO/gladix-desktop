@@ -1,0 +1,129 @@
+package dev.gladix.desktop.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import dev.brahmkshatriya.echo.common.models.Feed
+import dev.brahmkshatriya.echo.common.models.Shelf
+import dev.brahmkshatriya.echo.common.models.Tab
+import dev.brahmkshatriya.echo.common.models.Track
+import dev.gladix.desktop.ui.text.UiStrings
+
+@Composable
+fun HomeScreen(state: AppState) {
+    val feedLoader = rememberLoader("home") { state.ctx.client.homeFeed() }
+    val feed = feedLoader.data
+    val strings = UiStrings.s
+
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = strings.greeting(
+                        state.ctx.client.user?.name.orEmpty().ifBlank { strings.listenerFallback }
+                    ),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = strings.recommendedByDeezer,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        when {
+            feedLoader.loading && feed == null -> LoadingBox()
+            feedLoader.error != null && feed == null -> ErrorBox(feedLoader.error!!) {
+                feedLoader.reload()
+            }
+            feed != null -> TabbedShelves(state, feed)
+        }
+    }
+}
+
+/**
+ * Renders a [Feed] as a tab strip plus the shelves of the selected tab.
+ * When the feed has no tabs everything is shown in one page.
+ */
+@Composable
+fun TabbedShelves(state: AppState, feed: Feed<Shelf>) {
+    val tabs = feed.tabs
+    var selected by remember(feed) { mutableStateOf(0) }
+    val selectedTab: Tab? = tabs.getOrNull(selected)
+
+    val shelvesLoader = rememberLoader(feed, selectedTab) {
+        feed.getPagedData(selectedTab).pagedData.loadAll()
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        if (tabs.size > 1) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(tabs) { tab ->
+                    val index = tabs.indexOf(tab)
+                    FilterChip(
+                        selected = index == selected,
+                        onClick = { selected = index },
+                        label = { Text(tab.title) }
+                    )
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+        }
+
+        val shelves = shelvesLoader.data
+        when {
+            shelvesLoader.loading && shelves == null -> LoadingBox()
+            shelvesLoader.error != null && shelves == null ->
+                ErrorBox(shelvesLoader.error!!) { shelvesLoader.reload() }
+            shelves != null -> ShelvesColumn(
+                shelves = shelves,
+                onOpen = { state.open(it) },
+                onPlayTrack = { track, list -> playTrack(state, track, list) },
+                onPlayAll = { list -> playAll(state, list) },
+                onOpenCategory = { state.openCategory(it) },
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
+            else -> Box(Modifier.fillMaxSize())
+        }
+    }
+}
+
+fun playTrack(state: AppState, track: Track, list: List<Track>) {
+    val index = list.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
+    state.ctx.player.playList(list, index)
+}
+
+fun playAll(state: AppState, list: List<Track>) {
+    if (list.isEmpty()) return
+    state.ctx.player.playList(list, 0)
+}
