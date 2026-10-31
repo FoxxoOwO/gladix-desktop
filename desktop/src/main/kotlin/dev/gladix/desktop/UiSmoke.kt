@@ -2,6 +2,9 @@ package dev.gladix.desktop
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -12,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -27,9 +31,12 @@ import dev.gladix.desktop.ui.Page
 import dev.gladix.desktop.ui.SaveToPlaylistDialog
 import dev.gladix.desktop.ui.ShelvesColumn
 import dev.gladix.desktop.ui.SortControls
+import dev.gladix.desktop.ui.SortField
+import dev.gladix.desktop.ui.SortSpec
 import dev.gladix.desktop.ui.SortSheet
 import dev.gladix.desktop.ui.SortState
 import dev.gladix.desktop.ui.TrackMenuButton
+import dev.gladix.desktop.ui.sortShelves
 import kotlinx.coroutines.delay
 import kotlin.system.exitProcess
 
@@ -128,13 +135,25 @@ fun main() {
                             exitProcess(0)
                         }
                         when (phase) {
-                            screens.size -> ShelvesColumn(
-                                shelves = smokeShelves(smokeTracks),
-                                onOpen = {},
-                                onPlayTrack = { _, _ -> },
-                                onPlayAll = {},
-                                modifier = Modifier.padding(12.dp)
-                            )
+                            screens.size -> Column(Modifier.fillMaxSize()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Spacer(Modifier.weight(1f))
+                                    SortControls(remember { SortState(ctx.settings, "smoke") })
+                                }
+                                ShelvesColumn(
+                                    shelves = sortShelves(
+                                        smokeShelves(smokeTracks),
+                                        SortSpec(SortField.TITLE, reversed = true)
+                                    ),
+                                    onOpen = {},
+                                    onPlayTrack = { _, _ -> },
+                                    onPlayAll = {},
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
 
                             screens.size + 1 -> SortSheet(
                                 SortState(ctx.settings, "smoke"),

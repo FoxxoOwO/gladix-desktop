@@ -3,6 +3,9 @@ package dev.gladix.desktop.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import dev.brahmkshatriya.echo.common.models.Album
+import dev.brahmkshatriya.echo.common.models.EchoMediaItem
+import dev.brahmkshatriya.echo.common.models.Shelf
 import dev.brahmkshatriya.echo.common.models.Track
 import dev.gladix.desktop.core.PrefsSettings
 import java.text.Collator
@@ -55,6 +58,85 @@ data class SortSpec(
         }
         val sorted = tracks.sortedWith(comparator)
         return if (reversed) sorted.reversed() else sorted
+    }
+
+
+    /**
+     * Orders albums, playlists, artists and other media items by the same fields.
+     *
+     * Only [SortField.TITLE], [SortField.ARTISTS] and [SortField.ALBUMS] make sense for
+     * them; [SortField.DURATION] keeps the order the API returned, and reversing that
+     * order is still honoured.
+     */
+    fun applyItems(items: List<EchoMediaItem>): List<EchoMediaItem> {
+        if (isDefault) return items
+        val collator = Collator.getInstance(Locale.getDefault()).apply {
+            strength = Collator.SECONDARY
+        }
+        val comparator: Comparator<EchoMediaItem> = when (field) {
+            SortField.DEFAULT -> Comparator { a, b -> items.indexOf(a) - items.indexOf(b) }
+            SortField.TITLE -> Comparator { a, b -> collator.compare(itemTitle(a), itemTitle(b)) }
+            SortField.DURATION -> Comparator { a, b -> items.indexOf(a) - items.indexOf(b) }
+            SortField.ARTISTS -> Comparator { a, b ->
+                collator.compare(itemSubtitle(a).orEmpty(), itemSubtitle(b).orEmpty())
+            }
+
+            SortField.ALBUMS -> Comparator { a, b ->
+                collator.compare(albumTitleOf(a), albumTitleOf(b))
+            }
+        }
+        val sorted = items.sortedWith(comparator)
+        return if (reversed) sorted.reversed() else sorted
+    }
+}
+
+private fun albumTitleOf(item: EchoMediaItem): String = when (item) {
+    is Track -> item.album?.title.orEmpty()
+    is Album -> item.title
+    else -> item.title
+}
+
+/**
+ * Applies [spec] to every shelf of a feed, so sorting a tab orders all of its rows.
+ *
+ * The library delivers its tracks as one [Shelf.Item] per track, so a feed made only of
+ * loose track rows is sorted as a whole list. Otherwise track shelves are reordered
+ * directly, item shelves of tracks keep their wraps by ranking ids, and item shelves of
+ * albums, playlists or artists are ordered by the field the user picked. Categories are
+ * ordered by title.
+ */
+fun sortShelves(shelves: List<Shelf>, spec: SortSpec): List<Shelf> {
+    if (spec.isDefault) return shelves
+
+    // The whole feed is loose rows: sort them as one list instead of shelf by shelf.
+    val looseTracks = shelves.filterIsInstance<Shelf.Item>().mapNotNull { it.media as? Track }
+    if (looseTracks.size > 1 && looseTracks.size == shelves.size) {
+        val byId = shelves.associateBy { it.id }
+        return spec.apply(looseTracks).mapNotNull { byId[it.id] }
+    }
+
+    return shelves.map { shelf ->
+        when (shelf) {
+            is Shelf.Lists.Tracks -> shelf.copy(list = spec.apply(shelf.list))
+            is Shelf.Lists.Items ->
+                if (shelf.list.all { it is Track }) {
+                    val tracks = shelf.list.filterIsInstance<Track>()
+                    val rank = spec.apply(tracks).withIndex().associate { (index, it) -> it.id to index }
+                    shelf.copy(list = shelf.list.sortedBy { rank[it.id] ?: Int.MAX_VALUE })
+                } else {
+                    shelf.copy(list = spec.applyItems(shelf.list))
+                }
+
+            is Shelf.Lists.Categories -> {
+                val collator = Collator.getInstance(Locale.getDefault()).apply {
+                    strength = Collator.SECONDARY
+                }
+                val sorted = shelf.list.sortedWith { a, b -> collator.compare(a.title, b.title) }
+                shelf.copy(list = if (spec.reversed) sorted.reversed() else sorted)
+            }
+
+            else -> shelf
+        }
     }
 }
 

@@ -33,12 +33,13 @@ fun LibraryScreen(state: AppState) {
     val feed = feedLoader.data
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTitle("Knihovna")
+        ScreenTitle(UiStrings.s.navLibrary)
         when {
             feedLoader.loading && feed == null -> LoadingBox()
             feedLoader.error != null && feed == null ->
                 ErrorBox(feedLoader.error!!) { feedLoader.reload() }
-            feed != null -> TabbedShelves(state, feed)
+
+            feed != null -> TabbedShelves(state, feed, sortable = true)
         }
     }
 }

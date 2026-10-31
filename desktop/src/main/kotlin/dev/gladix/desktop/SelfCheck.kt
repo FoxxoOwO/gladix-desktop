@@ -1,6 +1,8 @@
 package dev.gladix.desktop
 
 import dev.brahmkshatriya.echo.common.models.Artist
+import dev.brahmkshatriya.echo.common.models.Album
+import dev.brahmkshatriya.echo.common.models.Shelf
 import dev.brahmkshatriya.echo.common.models.ImageHolder
 import dev.brahmkshatriya.echo.common.models.ImageHolder.Companion.toImageHolder
 import dev.brahmkshatriya.echo.common.models.Streamable
@@ -19,6 +21,7 @@ import dev.gladix.desktop.core.player.SavedQueue
 import dev.gladix.desktop.core.player.StreamQuality
 import dev.gladix.desktop.ui.SortField
 import dev.gladix.desktop.ui.SortSpec
+import dev.gladix.desktop.ui.sortShelves
 import dev.gladix.desktop.ui.text.UiStrings
 import kotlinx.serialization.encodeToString
 import java.io.ByteArrayOutputStream as JavaByteArrayOutputStream
@@ -98,6 +101,63 @@ fun main(args: Array<String>) {
         if (SortField.fromKey("nonsense") != SortField.DEFAULT) error("fallback broken")
         if (!SortSpec().isDefault) error("default spec should be default")
         if (SortSpec(reversed = true).isDefault) error("reversed spec is not default")
+    }
+
+    check("feed shelves sort their tracks and item rows") {
+        fun t(id: String, title: String) = Track(
+            id = id,
+            title = title,
+            artists = listOf(Artist(id = "a-$id", name = "A")),
+            duration = 1000L
+        )
+        val beta = t("1", "Beta")
+        val alpha = t("2", "alpha")
+        val tracks = Shelf.Lists.Tracks(id = "s1", title = "Skladby", list = listOf(beta, alpha))
+        val items = Shelf.Lists.Items(
+            id = "s2",
+            title = "Skladby jako položky",
+            list = listOf(beta, alpha)
+        )
+        val albums = Shelf.Lists.Items(
+            id = "s3",
+            title = "Alba",
+            list = listOf(
+                Album(id = "al-2", title = "Zebra"),
+                Album(id = "al-1", title = "Apple")
+            )
+        )
+        val shelves = listOf(tracks, items, albums)
+
+        sortShelves(shelves, SortSpec()).let { unchanged ->
+            if (unchanged != shelves) error("default sort must not touch the feed")
+        }
+
+        val sorted = sortShelves(shelves, SortSpec(SortField.TITLE))
+        val sortedTracks = (sorted[0] as Shelf.Lists.Tracks).list
+        if (sortedTracks.map { it.title } != listOf("alpha", "Beta")) {
+            error("track shelf order: ${sortedTracks.map { it.title }}")
+        }
+        val sortedItems = (sorted[1] as Shelf.Lists.Items).list
+        if (sortedItems.map { it.title } != listOf("alpha", "Beta")) {
+            error("item shelf order: ${sortedItems.map { it.title }}")
+        }
+        if (sortedItems.size != 2) error("item shelf lost rows while sorting")
+        val sortedAlbums = (sorted[2] as Shelf.Lists.Items).list
+        if (sortedAlbums.map { it.title } != listOf("Apple", "Zebra")) {
+            error("album shelf order: ${sortedAlbums.map { it.title }}")
+        }
+        val reversed = sortShelves(shelves, SortSpec(SortField.TITLE, reversed = true))
+        if ((reversed[1] as Shelf.Lists.Items).list.map { it.title } != listOf("Beta", "alpha")) {
+            error("reversed item shelf order is wrong")
+        }
+
+        // The library sends one Shelf.Item per track, so that shape must sort too.
+        val loose = listOf(Shelf.Item(beta), Shelf.Item(alpha))
+        val looseSorted = sortShelves(loose, SortSpec(SortField.TITLE))
+        if (looseSorted.map { it.title } != listOf("alpha", "Beta")) {
+            error("loose track rows order: ${looseSorted.map { it.title }}")
+        }
+        if (looseSorted.size != 2) error("loose rows were dropped while sorting")
     }
 
     check("Track survives JSON round-trip") {

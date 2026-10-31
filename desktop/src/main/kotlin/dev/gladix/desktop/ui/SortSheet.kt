@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,6 +49,7 @@ import dev.gladix.desktop.ui.text.UiStrings
  * written to settings.properties and reused next time, unchecked it only lasts
  * for this screen. Nothing changes until Apply is pressed.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SortSheet(state: SortState, onDismiss: () -> Unit) {
     val strings = UiStrings.s
@@ -100,7 +103,10 @@ fun SortSheet(state: SortState, onDismiss: () -> Unit) {
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     SortField.entries.forEach { field ->
                         FilterChip(
                             selected = draft.field == field,

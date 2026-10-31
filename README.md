@@ -65,7 +65,7 @@ Nastavení s přepínačem Windows integrace:
 | Ukládání skladby do playlistu (i vytvoření nového playlistu) | ✅ |
 | Ukazatel skutečné kvality přehrávaného streamu (např. `FLAC · 44.1 kHz · 2ch`) | ✅ měřeno dekodérem, ne nastavením |
 | Obrazovka Přehrává se: velký obal, ovládání, taby Následuje / Text písně / Informace | ✅ |
-| Řazení a filtr seznamu skladeb (název, délka, interpret, album, opačně) s volitelným uložením | ✅ |
+| Řazení a filtr seznamu skladeb (název, délka, interpret, album, opačně) s volitelným uložením | ✅ včetně všech záložek knihovny |
 | Rádio z alba, interpreta, playlistu, skladby | ✅ |
 | Přehrávání — volba kvality FLAC / 320 / 128 | ✅ automatický pokles na dostupnou |
 | Přehrávač: play/pause, další/předchozí, seek, hlasitost | ✅ |
@@ -395,7 +395,8 @@ java desktop\icons\IconGenerator.java
 
 - `gradlew.bat :desktop:selfCheck` — every check passes (serialization, settings,
   the quality ladder, decoding of the real MP3 and FLAC samples in `testdata/`, list
-  sorting, the measured stream-quality label).
+  sorting including the flat per-track rows of a library tab, the measured
+  stream-quality label).
 - `gradlew.bat :desktop:uiSmoke` — walks all 9 screens, the sort sheet, the track context
   menu and the save-to-playlist dialog in a real window and exits with code 0.
 - Built and started from `Gladix.exe` with no errors and no warnings in the log.
