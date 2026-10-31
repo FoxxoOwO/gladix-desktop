@@ -6,6 +6,12 @@ Android UI with a Compose Desktop UI.
 
 **[Česky](#česky)** · **[English](#english)**
 
+[![Latest release](https://img.shields.io/github/v/release/FoxxoOwO/gladix-desktop)](https://github.com/FoxxoOwO/gladix-desktop/releases/latest)
+
+**Stažení:** [Gladix-1.0.0-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — rozbalte a spusťte `Gladix\Gladix.exe`, JDK není potřeba.
+
+**Download:** [Gladix-1.0.0-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — unzip and run `Gladix\Gladix.exe`, no JDK needed.
+
 ---
 
 ## Česky
