@@ -473,11 +473,14 @@ fun LazyListScope.shelfRows(
     onPlayAll: (List<Track>) -> Unit,
     onOpenCategory: (Shelf.Category) -> Unit
 ) {
-    shelves.forEach { shelf ->
+    var i = 0
+    while (i < shelves.size) {
+        val shelf = shelves[i]
         val trackList = (shelf as? Shelf.Lists.Items)
             ?.list
             ?.takeIf { it.isNotEmpty() && it.all { item -> item is Track } }
             ?.map { it as Track }
+        val flat = if (trackList == null) flatTrackRun(shelves, i) else null
         when {
             trackList != null -> {
                 item {
@@ -501,13 +504,46 @@ fun LazyListScope.shelfRows(
                         onClick = { onPlayTrack(track, trackList) }
                     )
                 }
+                i++
             }
 
-            else -> item {
-                ShelfBlock(shelf, onOpen, onPlayTrack, onPlayAll, onOpenCategory)
+            flat != null -> {
+                // A library tab that is not a track shelf still arrives as one
+                // Shelf.Item per track, so the whole run is emitted as rows and a
+                // click queues the rest of it instead of a single song.
+                itemsIndexed(flat) { _, track ->
+                    TrackRow(
+                        track = track,
+                        index = null,
+                        isCurrent = false,
+                        isPlaying = false,
+                        onClick = { onPlayTrack(track, flat) }
+                    )
+                }
+                i += flat.size
+            }
+
+            else -> {
+                item { ShelfBlock(shelf, onOpen, onPlayTrack, onPlayAll, onOpenCategory) }
+                i++
             }
         }
     }
+}
+
+/**
+ * Collects the longest run of consecutive [Shelf.Item] shelves wrapping a track,
+ * starting at [index]. Returns null when [index] does not start such a run.
+ */
+internal fun flatTrackRun(shelves: List<Shelf>, index: Int): List<Track>? {
+    val tracks = ArrayList<Track>()
+    var i = index
+    while (i < shelves.size) {
+        val media = (shelves[i] as? Shelf.Item)?.media as? Track ?: break
+        tracks += media
+        i++
+    }
+    return tracks.takeIf { it.isNotEmpty() }
 }
 
 /** Play/pause circle button used in headers. */

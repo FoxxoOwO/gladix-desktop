@@ -12,6 +12,7 @@ import dev.gladix.desktop.core.AppPaths
 import dev.gladix.desktop.core.DeezerClient
 import dev.gladix.desktop.core.DownloadManager
 import dev.gladix.desktop.core.HistoryStore
+import dev.gladix.desktop.core.Lrclib
 import dev.gladix.desktop.core.PrefsSettings
 import dev.gladix.desktop.core.platform.AppIdentity
 import dev.gladix.desktop.core.platform.WindowsMediaSession
@@ -21,6 +22,7 @@ import dev.gladix.desktop.core.player.SavedQueue
 import dev.gladix.desktop.core.player.StreamQuality
 import dev.gladix.desktop.ui.SortField
 import dev.gladix.desktop.ui.SortSpec
+import dev.gladix.desktop.ui.flatTrackRun
 import dev.gladix.desktop.ui.sortShelves
 import dev.gladix.desktop.ui.text.UiStrings
 import kotlinx.serialization.encodeToString
@@ -158,6 +160,47 @@ fun main(args: Array<String>) {
             error("loose track rows order: ${looseSorted.map { it.title }}")
         }
         if (looseSorted.size != 2) error("loose rows were dropped while sorting")
+    }
+
+    // Clicking a track of a fine grained library tab has to queue the tracks
+    // around it, so the shape of that run is checked without a window.
+    check("flat library rows queue the rest of the tab") {
+        fun t(id: String) = Track(
+            id = id,
+            title = "T$id",
+            artists = listOf(Artist(id = "a-$id", name = "A")),
+            duration = 1000L
+        )
+        val one = t("1")
+        val two = t("2")
+        val three = t("3")
+        val album = Shelf.Item(Album(id = "al", title = "Album"))
+        val shelves = listOf(
+            Shelf.Item(one), Shelf.Item(two), album, Shelf.Item(three)
+        )
+
+        val firstRun = flatTrackRun(shelves, 0)
+        if (firstRun?.map { it.id } != listOf("1", "2")) {
+            error("first run: ${firstRun?.map { it.id }}")
+        }
+        if (flatTrackRun(shelves, 1)?.size != 1) error("run from a single row is wrong")
+        if (flatTrackRun(shelves, 2) != null) error("an album row must not start a track run")
+        val lastRun = flatTrackRun(shelves, 3)
+        if (lastRun?.map { it.id } != listOf("3")) error("last run: ${lastRun?.map { it.id }}")
+    }
+
+    // Deezer has no words for a large part of the catalogue, so the lrclib
+    // fallback has to strip its LRC markers and pick the closest candidate.
+    check("lyrics fallback strips timestamps and picks the closest match") {
+        val synced = "[00:12.34] First line\n[00:15.02] Second line\n\n[00:20.00] Third line"
+        val stripped = Lrclib.stripTimestamps(synced)
+            ?: error("timestamps produced no lyrics")
+        if (stripped != "First line\nSecond line\nThird line") {
+            error("stripped text: $stripped")
+        }
+        if (Lrclib.stripTimestamps("[00:01.00]\n[00:02.00]") != null) {
+            error("an empty lyric body must answer null")
+        }
     }
 
     check("Track survives JSON round-trip") {
