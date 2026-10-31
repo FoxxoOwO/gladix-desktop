@@ -35,6 +35,14 @@ interface Strings {
     val navQueue: String
     val navSettings: String
 
+    // Feed tab titles (the extension sends English ids, so the UI translates them)
+    val tabAll: String
+    val tabPlaylists: String
+    val tabAlbums: String
+    val tabTracks: String
+    val tabArtists: String
+    val emptyTab: String
+
     // Shared widgets
     val retry: String
     val showAll: String
@@ -207,6 +215,13 @@ private object CsStrings : Strings {
     override val navQueue = "Fronta"
     override val navSettings = "Nastavení"
 
+    override val tabAll = "Vše"
+    override val tabPlaylists = "Playlisty"
+    override val tabAlbums = "Alba"
+    override val tabTracks = "Skladby"
+    override val tabArtists = "Interpreti"
+    override val emptyTab = "V této sekci nic není."
+
     override val retry = "Zkusit znovu"
     override val showAll = "zobrazit vše"
     override val play = "přehrát"
@@ -371,6 +386,13 @@ private object EnStrings : Strings {
     override val navHistory = "History"
     override val navQueue = "Queue"
     override val navSettings = "Settings"
+
+    override val tabAll = "All"
+    override val tabPlaylists = "Playlists"
+    override val tabAlbums = "Albums"
+    override val tabTracks = "Tracks"
+    override val tabArtists = "Artists"
+    override val emptyTab = "Nothing in this section yet."
 
     override val retry = "Try again"
     override val showAll = "show all"

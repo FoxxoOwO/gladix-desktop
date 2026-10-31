@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -73,14 +75,11 @@ fun HomeScreen(state: AppState) {
  * When the feed has no tabs everything is shown in one page.
  */
 @Composable
-fun TabbedShelves(state: AppState, feed: Feed<Shelf>) {
-    val tabs = feed.tabs
-    var selected by remember(feed) { mutableStateOf(0) }
-    val selectedTab: Tab? = tabs.getOrNull(selected)
-
-    val shelvesLoader = rememberLoader(feed, selectedTab) {
-        feed.getPagedData(selectedTab).pagedData.loadAll()
-    }
+fun TabbedShelves(state: AppState, feed: Feed<Shelf>, startTab: Int = 0) {
+    val tabs = feed.notSortTabs
+    var selected by remember(feed) { mutableStateOf(startTab) }
+    val index = selected.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
+    val selectedTab: Tab? = tabs.getOrNull(index)
 
     Column(Modifier.fillMaxSize()) {
         if (tabs.size > 1) {
@@ -88,33 +87,55 @@ fun TabbedShelves(state: AppState, feed: Feed<Shelf>) {
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(tabs) { tab ->
-                    val index = tabs.indexOf(tab)
+                itemsIndexed(tabs) { position, tab ->
                     FilterChip(
-                        selected = index == selected,
-                        onClick = { selected = index },
-                        label = { Text(tab.title) }
+                        selected = position == index,
+                        onClick = { selected = position },
+                        label = { Text(tabTitle(tab)) }
                     )
                 }
             }
             Spacer(Modifier.height(6.dp))
         }
 
-        val shelves = shelvesLoader.data
-        when {
-            shelvesLoader.loading && shelves == null -> LoadingBox()
-            shelvesLoader.error != null && shelves == null ->
-                ErrorBox(shelvesLoader.error!!) { shelvesLoader.reload() }
-            shelves != null -> ShelvesColumn(
-                shelves = shelves,
-                onOpen = { state.open(it) },
-                onPlayTrack = { track, list -> playTrack(state, track, list) },
-                onPlayAll = { list -> playAll(state, list) },
-                onOpenCategory = { state.openCategory(it) },
-                modifier = Modifier.padding(horizontal = 12.dp)
-            )
-            else -> Box(Modifier.fillMaxSize())
+        // One loader per tab: reusing one across tabs kept the previous tab on
+        // screen (and its stale error), which made a freshly picked tab look empty.
+        key(selectedTab?.id) {
+            val shelvesLoader = rememberLoader(selectedTab) {
+                feed.getPagedData(selectedTab).pagedData.loadAll()
+            }
+            val shelves = shelvesLoader.data
+            when {
+                shelvesLoader.loading && shelves == null -> LoadingBox()
+                shelvesLoader.error != null -> ErrorBox(shelvesLoader.error!!) {
+                    shelvesLoader.reload()
+                }
+                shelves != null && shelves.isEmpty() -> EmptyBox(UiStrings.s.emptyTab)
+                shelves != null -> ShelvesColumn(
+                    shelves = shelves,
+                    onOpen = { state.open(it) },
+                    onPlayTrack = { track, list -> playTrack(state, track, list) },
+                    onPlayAll = { list -> playAll(state, list) },
+                    onOpenCategory = { state.openCategory(it) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+                else -> LoadingBox()
+            }
         }
+    }
+}
+
+/** Tab titles come from the extension in English, so the known ids are translated. */
+@Composable
+fun tabTitle(tab: Tab): String {
+    val strings = UiStrings.s
+    return when (tab.id) {
+        "all" -> strings.tabAll
+        "playlists" -> strings.tabPlaylists
+        "albums" -> strings.tabAlbums
+        "tracks" -> strings.tabTracks
+        "artists" -> strings.tabArtists
+        else -> tab.title
     }
 }
 
