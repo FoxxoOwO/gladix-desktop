@@ -18,11 +18,14 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import dev.brahmkshatriya.echo.common.models.Album
 import dev.brahmkshatriya.echo.common.models.Artist
+import dev.brahmkshatriya.echo.common.models.Playlist
+import dev.brahmkshatriya.echo.common.models.Shelf
 import dev.brahmkshatriya.echo.common.models.Track
 import dev.gladix.desktop.ui.App
 import dev.gladix.desktop.ui.AppState
 import dev.gladix.desktop.ui.Page
 import dev.gladix.desktop.ui.SaveToPlaylistDialog
+import dev.gladix.desktop.ui.ShelvesColumn
 import dev.gladix.desktop.ui.SortControls
 import dev.gladix.desktop.ui.SortSheet
 import dev.gladix.desktop.ui.SortState
@@ -89,10 +92,9 @@ fun main() {
     )
 
     var phase by mutableStateOf(0)
-    val phases = screens.size + 3 // + sort sheet, + track menu, + playlist dialog
+    val phases = screens.size + 4 // + shelf types, sort sheet, track menu, playlist dialog
 
     println("uiSmoke: $phases phases")
-
     application {
         Window(
             onCloseRequest = ::exitApplication,
@@ -109,23 +111,37 @@ fun main() {
                                 println("uiSmoke: ${screen.first}")
                                 delay(220)
                             }
-                            println("uiSmoke: sort sheet + menu + playlist dialog")
+                            // A library tab is a flat list of Shelf.Item rows, so every
+                            // shelf shape has to render - an unhandled one shows as an
+                            // empty page instead of an error.
+                            println("uiSmoke: shelf types")
                             phase = screens.size
-                            delay(400)
+                            delay(700)
+                            println("uiSmoke: sort sheet + menu + playlist dialog")
                             phase = screens.size + 1
                             delay(400)
                             phase = screens.size + 2
+                            delay(400)
+                            phase = screens.size + 3
                             delay(400)
                             println("uiSmoke: done")
                             exitProcess(0)
                         }
                         when (phase) {
-                            screens.size -> SortSheet(
+                            screens.size -> ShelvesColumn(
+                                shelves = smokeShelves(smokeTracks),
+                                onOpen = {},
+                                onPlayTrack = { _, _ -> },
+                                onPlayAll = {},
+                                modifier = Modifier.padding(12.dp)
+                            )
+
+                            screens.size + 1 -> SortSheet(
                                 SortState(ctx.settings, "smoke"),
                                 onDismiss = {}
                             )
 
-                            screens.size + 1 -> Column(Modifier.padding(24.dp)) {
+                            screens.size + 2 -> Column(Modifier.padding(24.dp)) {
                                 SortControls(remember { SortState(ctx.settings, "smoke") })
                                 TrackMenuButton(
                                     state = state,
@@ -134,7 +150,7 @@ fun main() {
                                 )
                             }
 
-                            screens.size + 2 -> SaveToPlaylistDialog(
+                            screens.size + 3 -> SaveToPlaylistDialog(
                                 state = state,
                                 track = smokeTracks.first(),
                                 onDismiss = {}
@@ -146,3 +162,35 @@ fun main() {
         }
     }
 }
+
+/**
+ * One shelf of every shape the UI renders, including the flat [Shelf.Item]
+ * rows a library tab is built from.
+ */
+internal fun smokeShelves(tracks: List<Track>): List<Shelf> = listOf(
+    Shelf.Item(
+        Album(
+            id = "smoke-album",
+            title = "Fast Lane",
+            artists = listOf(Artist(id = "smoke-artist", name = "AmaG")),
+            label = "Smoke Records"
+        )
+    ),
+    Shelf.Item(
+        Playlist(
+            id = "smoke-playlist",
+            title = "Road Trip",
+            isEditable = true,
+            authors = listOf(Artist(id = "smoke-user", name = "Teresa")),
+            trackCount = 42L
+        )
+    ),
+    Shelf.Item(Artist(id = "smoke-artist", name = "AmaG")),
+    Shelf.Lists.Tracks(id = "smoke-tracks", title = "Short list", list = tracks),
+    Shelf.Lists.Items(id = "smoke-items", title = "Whole collection", list = tracks),
+    Shelf.Lists.Categories(
+        id = "smoke-categories",
+        title = "Categories",
+        list = listOf(Shelf.Category(id = "smoke-category", title = "Rock"))
+    )
+)

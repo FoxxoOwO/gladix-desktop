@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -286,6 +288,51 @@ fun MediaCard(
     }
 }
 
+/** One media item (album, playlist, artist) as a list row. */
+@Composable
+fun MediaRow(
+    item: EchoMediaItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    val subtitle = itemSubtitle(item)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Cover(
+            item.cover,
+            Modifier.size(52.dp),
+            corner = if (item is dev.brahmkshatriya.echo.common.models.Artist) 26.dp else 8.dp
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = itemTitle(item),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        trailing?.invoke()
+    }
+}
+
 /** Renders one shelf (row of cards or a short track list). */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -360,14 +407,20 @@ fun ShelfBlock(
         }
 
         is Shelf.Item -> {
+            // Every tab of the library feed is a flat list of these, so an album,
+            // playlist or artist shelf item has to render as a row - not be dropped.
             val item = shelf.media
-            TrackRow(
-                track = item as? Track ?: return,
-                index = null,
-                isCurrent = false,
-                isPlaying = false,
-                onClick = { onPlayTrack(item as Track, listOf(item)) }
-            )
+            if (item is Track) {
+                TrackRow(
+                    track = item,
+                    index = null,
+                    isCurrent = false,
+                    isPlaying = false,
+                    onClick = { onPlayTrack(item, listOf(item)) }
+                )
+            } else {
+                MediaRow(item = item, onClick = { onOpen(item) })
+            }
         }
 
         is Shelf.Category -> {
@@ -400,8 +453,59 @@ fun ShelvesColumn(
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         if (header != null) item { header() }
-        items(shelves) { shelf ->
-            ShelfBlock(shelf, onOpen, onPlayTrack, onPlayAll, onOpenCategory)
+        shelfRows(shelves, onOpen, onPlayTrack, onPlayAll, onOpenCategory)
+    }
+}
+
+/**
+ * Emits [shelves] into a lazy list, expanding a shelf that holds nothing but
+ * tracks into real rows.
+ *
+ * A library tab arrives as ONE shelf wrapping hundreds of items (the Tracks tab
+ * is a single shelf with the whole favourites list), so rendering it as a card
+ * strip would hide the collection behind a horizontal scroll. Everything else
+ * keeps the compact [ShelfBlock] look.
+ */
+fun LazyListScope.shelfRows(
+    shelves: List<Shelf>,
+    onOpen: (EchoMediaItem) -> Unit,
+    onPlayTrack: (Track, List<Track>) -> Unit,
+    onPlayAll: (List<Track>) -> Unit,
+    onOpenCategory: (Shelf.Category) -> Unit
+) {
+    shelves.forEach { shelf ->
+        val trackList = (shelf as? Shelf.Lists.Items)
+            ?.list
+            ?.takeIf { it.isNotEmpty() && it.all { item -> item is Track } }
+            ?.map { it as Track }
+        when {
+            trackList != null -> {
+                item {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        SectionHeader(
+                            shelf.title,
+                            trailing = {
+                                TextButton(onClick = { onPlayAll(trackList) }) {
+                                    Text(UiStrings.s.play)
+                                }
+                            }
+                        )
+                    }
+                }
+                itemsIndexed(trackList) { index, track ->
+                    TrackRow(
+                        track = track,
+                        index = index,
+                        isCurrent = false,
+                        isPlaying = false,
+                        onClick = { onPlayTrack(track, trackList) }
+                    )
+                }
+            }
+
+            else -> item {
+                ShelfBlock(shelf, onOpen, onPlayTrack, onPlayAll, onOpenCategory)
+            }
         }
     }
 }
