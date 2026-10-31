@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,15 +65,29 @@ fun DownloadsScreen(state: AppState) {
     val items = downloads.items
     val scope = rememberCoroutineScope()
     val player = state.ctx.player
+    val sort = remember { SortState(state.ctx.settings, "downloads") }
+    val shown = sort.spec.apply(items.map { it.track })
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTitle(UiStrings.s.downloadedTracks)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = UiStrings.s.downloadedTracks,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            SortControls(sort)
+        }
         if (items.isEmpty()) {
             EmptyBox(UiStrings.s.nothingDownloaded)
             return@Column
         }
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
-            items(items) { entry ->
+            items(shown) { track ->
+                val entry = items.first { it.track.id == track.id }
                 val isCurrent = player.current?.id == entry.track.id
                 TrackRow(
                     track = entry.track,
@@ -80,7 +95,7 @@ fun DownloadsScreen(state: AppState) {
                     isCurrent = isCurrent,
                     isPlaying = isCurrent && player.isPlaying,
                     onClick = {
-                        player.playList(items.map { it.track }, items.indexOf(entry))
+                        player.playList(shown, shown.indexOf(track))
                     },
                     secondary = {
                         Text(
@@ -91,9 +106,10 @@ fun DownloadsScreen(state: AppState) {
                     },
                     trailing = {
                         IconButton(onClick = { scope.launch { downloads.delete(entry.track.id) } }) {
-                            Icon(Icons.Rounded.Delete, contentDescription = "Smazat")
+                            Icon(Icons.Rounded.Delete, contentDescription = UiStrings.s.remove)
                         }
-                    }
+                    },
+                    menu = { TrackMenuButton(state, entry.track) }
                 )
             }
         }
@@ -107,18 +123,21 @@ fun HistoryScreen(state: AppState) {
     history.version
     val entries = history.all
     val player = state.ctx.player
+    val sort = remember { SortState(state.ctx.settings, "history") }
+    val shown = sort.spec.apply(entries.map { it.track })
 
     Column(Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Historie",
+                text = UiStrings.s.navHistory,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
+            SortControls(sort)
             if (entries.isNotEmpty()) {
                 IconButton(onClick = { history.clear() }) {
                     Icon(Icons.Rounded.Delete, contentDescription = UiStrings.s.clearHistory)
@@ -130,16 +149,15 @@ fun HistoryScreen(state: AppState) {
             return@Column
         }
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
-            items(entries) { entry ->
-                val isCurrent = player.current?.id == entry.track.id
+            items(shown) { track ->
+                val isCurrent = player.current?.id == track.id
                 TrackRow(
-                    track = entry.track,
+                    track = track,
                     index = null,
                     isCurrent = isCurrent,
                     isPlaying = isCurrent && player.isPlaying,
-                    onClick = {
-                        player.playList(entries.map { it.track }, entries.indexOf(entry))
-                    }
+                    onClick = { player.playList(shown, shown.indexOf(track)) },
+                    menu = { TrackMenuButton(state, track) }
                 )
             }
         }
@@ -158,7 +176,7 @@ fun QueueScreen(state: AppState) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Fronta",
+                    text = UiStrings.s.navQueue,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -192,7 +210,8 @@ fun QueueScreen(state: AppState) {
                         IconButton(onClick = { player.removeFromQueue(position) }) {
                             Icon(Icons.Rounded.Close, contentDescription = UiStrings.s.remove)
                         }
-                    }
+                    },
+                    menu = { TrackMenuButton(state, track) }
                 )
             }
         }
@@ -200,55 +219,13 @@ fun QueueScreen(state: AppState) {
 }
 
 @Composable
-fun NowPlayingScreen(state: AppState) {
-    val player = state.ctx.player
-    val track = player.current
-
-    Column(Modifier.fillMaxSize()) {
-        BackRow(state)
-        if (track == null) {
-            EmptyBox(UiStrings.s.nothingPlaying)
-            return@Column
-        }
-        Row(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(Modifier.weight(1f))
-                Cover(track.cover, Modifier.fillMaxWidth(0.75f).aspectRatio(1f), corner = 16.dp)
-                Box(Modifier.weight(1f))
-                Text(
-                    text = track.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 20.dp)
-                )
-                Text(
-                    text = track.artists.joinToString(", ") { it.name },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            LyricsPane(state, track, Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun LyricsPane(
+internal fun LyricsPane(
     state: AppState,
     track: dev.brahmkshatriya.echo.common.models.Track,
     modifier: Modifier = Modifier
 ) {
     val loader = rememberLoader(track.id) { state.ctx.client.lyrics(track) }
-    Column(modifier = modifier.fillMaxSize().padding(start = 24.dp)) {
-        Text(
-            text = UiStrings.s.lyrics,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+    Column(modifier = modifier.fillMaxSize()) {
         val lyrics = loader.data
         when {
             loader.loading -> LoadingBox()

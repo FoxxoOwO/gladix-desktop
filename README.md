@@ -61,6 +61,11 @@ Nastavení s přepínačem Windows integrace:
 | Historie hledání | ✅ |
 | Knihovna (feedy) | ✅ |
 | Detail alba / interpreta / playlistu | ✅ |
+| Kontextové menu skladby (přehrát, další, fronta, knihovna, lajky, playlist, stahování, interpret, album, rádio, sdílení) | ✅ |
+| Ukládání skladby do playlistu (i vytvoření nového playlistu) | ✅ |
+| Ukazatel skutečné kvality přehrávaného streamu (např. `FLAC · 44.1 kHz · 2ch`) | ✅ měřeno dekodérem, ne nastavením |
+| Obrazovka Přehrává se: velký obal, ovládání, taby Následuje / Text písně / Informace | ✅ |
+| Řazení a filtr seznamu skladeb (název, délka, interpret, album, opačně) s volitelným uložením | ✅ |
 | Rádio z alba, interpreta, playlistu, skladby | ✅ |
 | Přehrávání — volba kvality FLAC / 320 / 128 | ✅ automatický pokles na dostupnou |
 | Přehrávač: play/pause, další/předchozí, seek, hlasitost | ✅ |
@@ -102,7 +107,10 @@ java desktop\icons\IconGenerator.java
 ### Ověřeno
 
 - `gradlew.bat :desktop:selfCheck` — všechny kontroly procházejí (serializace, nastavení,
-  žebříček kvalit, dekódování MP3 i FLAC z `testdata/`).
+  žebříček kvalit, dekódování MP3 i FLAC z `testdata/`, řazení seznamů, popisek měřené
+  kvality streamu).
+- `gradlew.bat :desktop:uiSmoke` — projde všech 9 obrazovek, sheet řazení, kontextové
+  menu skladby i dialog ukládání do playlistu v reálném okně a skončí s kódem 0.
 - Sestavení a spuštění z `Gladix.exe` bez chyb a bez varování v logu.
 - Přihlášení reálným Deezer účtem, načtení domovského feedu (recently played, mixy,
   playlisty, Flow, doporučení), knihovny a detailu alba.
@@ -136,7 +144,18 @@ gradlew.bat :desktop:selfCheck
 
 `selfCheck` je headless sada kontrol, které nepotřebují Deezer účet: serializace
 ukládaných modelů, nastavení, žebříček kvalit, dekódování reálného MP3 a FLAC souboru
-(`testdata/`) a převod na PCM pro zvukovou kartu.
+(`testdata/`), převod na PCM pro zvukovou kartu, řazení seznamů a popisek měřené
+kvality streamu.
+
+```bat
+gradlew.bat :desktop:uiSmoke
+```
+
+`uiSmoke` otevře reálné okno a projde postupně všechny obrazovky (Domů, Hledání,
+Knihovna, Stažené, Historie, Fronta, Nastavení, Přehrává se, detail alba) a navíc
+sheet řazení, kontextové menu skladby a dialog ukládání do playlistu. Když některý
+composable spadne, skončí nenulovým kódem - to odhalí chyby, které `selfCheck`
+nevidí (ikona, scope `weight`, chybějící řetězec). Účet nepotřebuje.
 
 ### Sestavení Windows aplikace
 
@@ -202,6 +221,13 @@ FLAC (který nemá obnovovací body uprostřed souboru) a pro MP3 bez znalosti b
 **Stahování.** Stahuje se stejný dešifrovaný proud jako při přehrávání, do souboru
 `<id>.part`, a po dokončení se podle hlavičky přejmenuje na `.flac` / `.mp3` / `.wav`.
 
+**Ukazatel kvality.** Nastavení kvality je jen přání: Deezer u skladby, která ve FLAC
+nevyšla, vrátí MP3, a `DeezerClient` proto zkouší 9 → 6 → 3 → 0, dokud něco nepřijde.
+Pill v přehrávači ukazuje, co **skutečně** přišlo — `Decoders.open()` vrátí kromě PCM
+proudu i rozpoznaný kontejner a formát, `PlayerController.streamQuality` to vystaví a
+`StreamQuality.label` z toho složí text jako `FLAC · 44.1 kHz · 2ch`. Před přepnutím
+skladby se hodnota vynuluje, aby na obrazovce nikdy nezůstala kvalita té předchozí.
+
 **Windows a mediální klávesy.** Přehrávač publikuje stav do System Media Transport
 Controls (SMTC) přes knihovnu `JavaMediaTransportControls`; z toho žije widget v
 rychlých nastaveních i směrování hardwarových mediálních kláves — vlastní hook na
@@ -234,6 +260,7 @@ desktop/
   src/main/kotlin/dev/gladix/desktop/
     Main.kt              vstupní bod, okno
     SelfCheck.kt         headless testy
+    UiSmoke.kt           projde všechny obrazovky v reálném okně
     AppContext.kt        sdílené závislosti
     core/
       Prefs.kt           cesty, nastavení, JSON
@@ -243,6 +270,7 @@ desktop/
       History.kt         historie přehrávání
       player/
         Decoders.kt      detekce kontejneru a převod na PCM
+        StreamQuality.kt naměřený formát streamu pro ukazatel kvality
         AudioEngine.kt   výstup na zvukovou kartu
         PlayerController.kt  fronta, opakování, náhoda
       platform/
@@ -251,6 +279,10 @@ desktop/
         SystemMediaSink.kt     rozhraní, prázdná implementace pro jiné OS
     ui/                  Compose obrazovky
       text/Strings.kt    všechny texty rozhraní (cs + en)
+      NowPlayingScreen.kt  velký přehrávač s taby Následuje / Text / Informace
+      TrackMenu.kt       kontextové menu skladby a ukládání do playlistu
+      Sort.kt            logika řazení a její uložení
+      SortSheet.kt       sheet Řazení a filtr
 testdata/                vzorky pro selfCheck
 ```
 
@@ -315,6 +347,11 @@ Settings with the Windows integration toggle:
 | Search history | ✅ |
 | Library (feeds) | ✅ |
 | Album / artist / playlist detail | ✅ |
+| Track context menu (play, next, queue, library, likes, playlist, download, artist, album, radio, share) | ✅ |
+| Saving a track to a playlist (including creating a new one) | ✅ |
+| Real quality of the stream that is playing (e.g. `FLAC · 44.1 kHz · 2ch`) | ✅ measured by the decoder, not by the setting |
+| Now playing screen: large artwork, transport, Up Next / Lyrics / Info tabs | ✅ |
+| Sorting and filtering a track list (title, duration, artist, album, reversed) with an optional save | ✅ |
 | Radio from an album, artist, playlist or track | ✅ |
 | Playback — quality FLAC / 320 / 128 | ✅ falls back to the best available |
 | Player: play/pause, next/previous, seek, volume | ✅ |
@@ -357,7 +394,10 @@ java desktop\icons\IconGenerator.java
 ### Verified
 
 - `gradlew.bat :desktop:selfCheck` — every check passes (serialization, settings,
-  the quality ladder, decoding of the real MP3 and FLAC samples in `testdata/`).
+  the quality ladder, decoding of the real MP3 and FLAC samples in `testdata/`, list
+  sorting, the measured stream-quality label).
+- `gradlew.bat :desktop:uiSmoke` — walks all 9 screens, the sort sheet, the track context
+  menu and the save-to-playlist dialog in a real window and exits with code 0.
 - Built and started from `Gladix.exe` with no errors and no warnings in the log.
 - Signed in with a real Deezer account, home feed loaded (recently played, mixes,
   playlists, Flow, recommendations), library and album details as well.
@@ -391,7 +431,18 @@ gradlew.bat :desktop:selfCheck
 
 `selfCheck` is a headless suite that needs no Deezer account: serialization of stored
 models, settings, the quality ladder, decoding of a real MP3 and FLAC file
-(`testdata/`) and conversion to PCM for the sound card.
+(`testdata/`), conversion to PCM for the sound card, list sorting and the measured
+stream-quality label.
+
+```bat
+gradlew.bat :desktop:uiSmoke
+```
+
+`uiSmoke` opens a real window and walks every screen in turn (Home, Search, Library,
+Downloads, History, Queue, Settings, Now playing, album detail) plus the sort sheet,
+the track context menu and the save-to-playlist dialog. If a composable throws, it
+exits non-zero - that catches what `selfCheck` cannot see (a wrong icon, a `weight`
+in the wrong scope, a missing string). It needs no account.
 
 ### Building the Windows app
 
@@ -458,6 +509,14 @@ bitrate.
 **Downloads.** The same decrypted stream as playback is written to `<id>.part` and
 renamed to `.flac` / `.mp3` / `.wav` once complete, based on the header.
 
+**Quality pill.** The quality setting is only a wish: for a track that was never
+released as FLAC, Deezer answers with MP3, so `DeezerClient` tries 9 → 6 → 3 → 0 until
+something arrives. The pill in the player shows what **actually** arrived —
+`Decoders.open()` returns the recognised container and format next to the PCM stream,
+`PlayerController.streamQuality` exposes it and `StreamQuality.label` builds a text such
+as `FLAC · 44.1 kHz · 2ch`. The value is cleared before a new track starts, so the
+previous track's quality is never left on screen.
+
 **Windows and media keys.** The player publishes state to the System Media Transport
 Controls (SMTC) through `JavaMediaTransportControls`; the quick settings widget and
 the routing of hardware media keys both come from it — a custom keyboard hook is
@@ -490,6 +549,7 @@ desktop/
   src/main/kotlin/dev/gladix/desktop/
     Main.kt              entry point, window
     SelfCheck.kt         headless tests
+    UiSmoke.kt           walks every screen in a real window
     AppContext.kt        shared dependencies
     core/
       Prefs.kt           paths, settings, JSON
@@ -499,6 +559,7 @@ desktop/
       History.kt         playback history
       player/
         Decoders.kt      container detection and PCM conversion
+        StreamQuality.kt measured stream format for the quality pill
         AudioEngine.kt   output to the sound card
         PlayerController.kt  queue, repeat, shuffle
       platform/
@@ -507,6 +568,10 @@ desktop/
         SystemMediaSink.kt     interface, no-op implementation for other OSes
     ui/                  Compose screens
       text/Strings.kt    every UI string (cs + en)
+      NowPlayingScreen.kt  large player with Up Next / Lyrics / Info tabs
+      TrackMenu.kt       track context menu and save-to-playlist
+      Sort.kt            sort logic and how it is persisted
+      SortSheet.kt       the sort and filter sheet
 testdata/                samples for selfCheck
 ```
 

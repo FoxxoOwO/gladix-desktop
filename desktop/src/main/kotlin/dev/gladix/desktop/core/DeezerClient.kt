@@ -151,6 +151,20 @@ class DeezerClient(val settings: PrefsSettings) {
     suspend fun shareUrl(item: EchoMediaItem): String? =
         runCatching { extension.onShare(item) }.getOrNull()
 
+    // -------------------------------------------------------------- playlists
+
+    /** Playlists of the signed-in user that accept new tracks, and whether [track] is in them. */
+    suspend fun editablePlaylists(track: Track?): List<Pair<Playlist, Boolean>> =
+        runCatching { extension.listEditablePlaylists(track) }.getOrDefault(emptyList())
+
+    suspend fun createPlaylist(title: String): Playlist =
+        extension.createPlaylist(title, null)
+
+    /** Appends [tracks] to the end of [playlist]. */
+    suspend fun addToPlaylist(playlist: Playlist, tracks: List<Track>) {
+        extension.addTracksToPlaylist(playlist, tracks, tracks.size, tracks)
+    }
+
     // ----------------------------------------------------------------- lyrics
 
     suspend fun lyrics(track: Track): String? = runCatching {

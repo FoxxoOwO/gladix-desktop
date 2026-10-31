@@ -79,6 +79,48 @@ interface Strings {
     val download: String
     val artistLabel: String
 
+    // Track context menu
+    val moreActions: String
+    val addToNext: String
+    val addToQueue: String
+    val removeFromLibrary: String
+    val unlike: String
+    val saveToPlaylist: String
+    val goToArtist: String
+    val goToAlbum: String
+    val newPlaylist: String
+    val playlistName: String
+    val create: String
+    val cancel: String
+    val noEditablePlaylists: String
+    fun addedNext(title: String): String
+    fun addedToQueue(title: String): String
+    fun addedToPlaylist(playlist: String): String
+
+    // Sorting and filtering a track list
+    val sortAndFilter: String
+    val sortBy: String
+    val sortDefault: String
+    val sortTitle: String
+    val sortDuration: String
+    val sortArtists: String
+    val sortAlbums: String
+    val reversed: String
+    val save: String
+    val apply: String
+    val reset: String
+
+    // Now playing / quality
+    val upNext: String
+    val info: String
+    val qualityUnknown: String
+    val infoAlbum: String
+    val infoYear: String
+    val infoDuration: String
+    val infoLabel: String
+    val infoTrackNumber: String
+    val notAvailable: String
+
     // Library
     val downloadedTracks: String
     val nothingDownloaded: String
@@ -204,6 +246,45 @@ private object CsStrings : Strings {
     override fun downloadFailed(message: String?) = "Stažení selhalo: ${message ?: "?"}"
     override val download = "Stáhnout"
     override val artistLabel = "Interpret"
+
+    override val moreActions = "Další možnosti"
+    override val addToNext = "Přehrát jako další"
+    override val addToQueue = "Přidat do fronty"
+    override val removeFromLibrary = "Odebrat z knihovny"
+    override val unlike = "Už se mi nelíbí"
+    override val saveToPlaylist = "Uložit do playlistu"
+    override val goToArtist = "Přejít na interpreta"
+    override val goToAlbum = "Přejít na album"
+    override val newPlaylist = "Nový playlist"
+    override val playlistName = "Název playlistu"
+    override val create = "Vytvořit"
+    override val cancel = "Zrušit"
+    override val noEditablePlaylists = "Nemáš žádný playlist, do kterého by se dalo přidávat."
+    override fun addedNext(title: String) = "$title se přehraje jako další"
+    override fun addedToQueue(title: String) = "$title přidáno do fronty"
+    override fun addedToPlaylist(playlist: String) = "Přidáno do playlistu $playlist"
+
+    override val sortAndFilter = "Řazení a filtr"
+    override val sortBy = "Řadit podle"
+    override val sortDefault = "Výchozí"
+    override val sortTitle = "Název"
+    override val sortDuration = "Délka"
+    override val sortArtists = "Interpret"
+    override val sortAlbums = "Album"
+    override val reversed = "Opačně"
+    override val save = "Uložit"
+    override val apply = "Použít"
+    override val reset = "Obnovit výchozí"
+
+    override val upNext = "Následuje"
+    override val info = "Informace"
+    override val qualityUnknown = "Neznámá kvalita"
+    override val infoAlbum = "Album"
+    override val infoYear = "Rok"
+    override val infoDuration = "Délka"
+    override val infoLabel = "Vydavatel"
+    override val infoTrackNumber = "Číslo skladby"
+    override val notAvailable = "—"
 
     override val downloadedTracks = "Stažené skladby"
     override val nothingDownloaded = "Zatím nic staženého. Stahuj tlačítkem u skladby nebo alba."
@@ -331,6 +412,45 @@ private object EnStrings : Strings {
     override fun downloadFailed(message: String?) = "Download failed: ${message ?: "?"}"
     override val download = "Download"
     override val artistLabel = "Artist"
+
+    override val moreActions = "More actions"
+    override val addToNext = "Add to next"
+    override val addToQueue = "Add to queue"
+    override val removeFromLibrary = "Remove from library"
+    override val unlike = "Unlike"
+    override val saveToPlaylist = "Save to playlist"
+    override val goToArtist = "Go to artist"
+    override val goToAlbum = "Go to album"
+    override val newPlaylist = "New playlist"
+    override val playlistName = "Playlist name"
+    override val create = "Create"
+    override val cancel = "Cancel"
+    override val noEditablePlaylists = "You have no playlist that accepts new tracks."
+    override fun addedNext(title: String) = "$title plays next"
+    override fun addedToQueue(title: String) = "$title added to the queue"
+    override fun addedToPlaylist(playlist: String) = "Added to $playlist"
+
+    override val sortAndFilter = "Sort and filter"
+    override val sortBy = "Sort"
+    override val sortDefault = "Default"
+    override val sortTitle = "Title"
+    override val sortDuration = "Duration"
+    override val sortArtists = "Artists"
+    override val sortAlbums = "Albums"
+    override val reversed = "Reversed"
+    override val save = "Save"
+    override val apply = "Apply"
+    override val reset = "Reset to default"
+
+    override val upNext = "Up next"
+    override val info = "Info"
+    override val qualityUnknown = "Unknown quality"
+    override val infoAlbum = "Album"
+    override val infoYear = "Year"
+    override val infoDuration = "Duration"
+    override val infoLabel = "Label"
+    override val infoTrackNumber = "Track number"
+    override val notAvailable = "—"
 
     override val downloadedTracks = "Downloaded tracks"
     override val nothingDownloaded = "Nothing downloaded yet. Use the button next to a track or album."

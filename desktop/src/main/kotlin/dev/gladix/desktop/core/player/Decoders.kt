@@ -31,6 +31,9 @@ object Decoders {
     var lastContainer: Container = Container.UNKNOWN
         private set
 
+    /** A decoded stream together with what it turned out to be. */
+    data class Decoded(val stream: AudioInputStream, val container: Container)
+
     /** Reads the first bytes and guesses the container. */
     fun sniff(head: ByteArray, length: Int): Container {
         if (length >= 4) {
@@ -62,13 +65,19 @@ object Decoders {
      * Opens [input] and returns a stream already converted to
      * `PCM_SIGNED 16 bit little endian` at the source sample rate.
      */
-    fun openPcm(input: InputStream): AudioInputStream {
+    fun openPcm(input: InputStream): AudioInputStream = open(input).stream
+
+    /**
+     * Like [openPcm], but also reports which container the bytes really were.
+     * The UI uses that for the quality indicator next to the player.
+     */
+    fun open(input: InputStream): Decoded {
         val buffered = BufferedInputStream(input, BUFFER_SIZE)
         val container = detect(buffered)
         lastContainer = container
 
         val decoded = openRaw(buffered, container)
-        return toPcm(decoded, container)
+        return Decoded(toPcm(decoded, container), container)
     }
 
     private fun detect(stream: BufferedInputStream): Container {

@@ -78,6 +78,10 @@ class PlayerController(
     var shuffle by mutableStateOf(false)
         private set
 
+    /** Format of the stream that is currently open, for the quality indicator. */
+    var streamQuality by mutableStateOf<StreamQuality?>(null)
+        private set
+
     var shuffleOrder by mutableStateOf<List<Int>>(emptyList())
         private set
 
@@ -102,6 +106,7 @@ class PlayerController(
         }
         engine.onEnded = { scope.launch { onTrackEnded() } }
         engine.onError = { t -> scope.launch { onEngineError(t) } }
+        engine.onFormat = { quality -> streamQuality = quality }
 
         volume = settings.getString(PrefsSettings.KEY_VOLUME)?.toFloatOrNull() ?: 0.85f
         engine.setVolume(volume)
@@ -323,6 +328,7 @@ class PlayerController(
         positionMs = 0L
         isPlaying = false
         isBuffering = false
+        streamQuality = null
         systemMedia.onPlayingChanged(false)
     }
 
@@ -376,6 +382,8 @@ class PlayerController(
             error = null
             durationMs = track.duration ?: 0L
             positionMs = startAt
+            // Stale until the decoder reports the new stream.
+            streamQuality = null
             history.add(track)
             persist()
 

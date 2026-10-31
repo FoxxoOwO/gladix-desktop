@@ -16,6 +16,9 @@ import dev.gladix.desktop.core.platform.WindowsMediaSession
 import dev.gladix.desktop.core.player.PlayerController
 import dev.gladix.desktop.core.player.Decoders
 import dev.gladix.desktop.core.player.SavedQueue
+import dev.gladix.desktop.core.player.StreamQuality
+import dev.gladix.desktop.ui.SortField
+import dev.gladix.desktop.ui.SortSpec
 import dev.gladix.desktop.ui.text.UiStrings
 import kotlinx.serialization.encodeToString
 import java.io.ByteArrayOutputStream as JavaByteArrayOutputStream
@@ -49,6 +52,53 @@ fun main(args: Array<String>) {
     }
 
     // ---------------------------------------------------------------- models
+
+    // The sort sheet writes these choices to settings.properties, so the pure
+    // ordering logic has to be provably right without a window on screen.
+    check("sort spec orders by title, duration and reverses the original") {
+        fun t(id: String, title: String, ms: Long, artist: String) = Track(
+            id = id,
+            title = title,
+            artists = listOf(Artist(id = "a-$id", name = artist)),
+            duration = ms
+        )
+        val a = t("1", "Beta", 3000L, "Zoe")
+        val b = t("2", "alpha", 1000L, "Adam")
+        val c = t("3", "Gamma", 2000L, "Mike")
+        val original = listOf(a, b, c)
+
+        if (SortSpec().apply(original) != original) error("default order changed")
+
+        val byTitle = SortSpec(SortField.TITLE).apply(original)
+        if (byTitle.map { it.title } != listOf("alpha", "Beta", "Gamma")) {
+            error("title order: ${byTitle.map { it.title }}")
+        }
+
+        val byDuration = SortSpec(SortField.DURATION).apply(original)
+        if (byDuration.map { it.id } != listOf("2", "3", "1")) {
+            error("duration order: ${byDuration.map { it.id }}")
+        }
+
+        val byArtists = SortSpec(SortField.ARTISTS).apply(original)
+        if (byArtists.map { it.id } != listOf("2", "3", "1")) {
+            error("artist order: ${byArtists.map { it.id }}")
+        }
+
+        val reversed = SortSpec(SortField.DEFAULT, reversed = true).apply(original)
+        if (reversed.map { it.id } != listOf("3", "2", "1")) {
+            error("reversed order: ${reversed.map { it.id }}")
+        }
+
+        val titleReversed = SortSpec(SortField.TITLE, reversed = true).apply(original)
+        if (titleReversed.map { it.title } != listOf("Gamma", "Beta", "alpha")) {
+            error("reversed title order: ${titleReversed.map { it.title }}")
+        }
+
+        if (SortField.fromKey("duration") != SortField.DURATION) error("key lookup broken")
+        if (SortField.fromKey("nonsense") != SortField.DEFAULT) error("fallback broken")
+        if (!SortSpec().isDefault) error("default spec should be default")
+        if (SortSpec(reversed = true).isDefault) error("reversed spec is not default")
+    }
 
     check("Track survives JSON round-trip") {
         val track = Track(
@@ -270,6 +320,45 @@ fun main(args: Array<String>) {
         val supported = AudioSystem.isLineSupported(info)
         val mixers = AudioSystem.getMixerInfo().size
         println("      output line supported=$supported, mixers=$mixers")
+    }
+
+    // The quality pill next to the player shows what the decoder really got,
+    // not what the quality setting asked for, so its formatting has to be right.
+    check("stream quality label reports container, rate and channels") {
+        val flac = StreamQuality(
+            container = Decoders.Container.FLAC,
+            sampleRate = 44100,
+            channels = 2,
+            bitsPerSample = 16
+        )
+        println("      label=${flac.label}")
+        if (flac.label != "FLAC · 44.1 kHz · 2ch") error("unexpected label: ${flac.label}")
+
+        val mp3 = StreamQuality(Decoders.Container.MP3, 48000, 1, 16)
+        if (mp3.label != "MP3 · 48 kHz · 1ch") error("unexpected label: ${mp3.label}")
+
+        val unknown = StreamQuality(Decoders.Container.UNKNOWN, 0, 0, 0)
+        if (unknown.label != null) error("unknown should render nothing: ${unknown.label}")
+    }
+
+    check("decoder reports the container it actually opened") {
+        val file = listOf(
+            java.io.File("testdata/sample.flac"),
+            java.io.File("../testdata/sample.flac")
+        ).firstOrNull { it.exists() }
+        if (file == null) {
+            println("      testdata/sample.flac not found - skipped")
+        } else {
+            file.inputStream().use { raw ->
+                val decoded = Decoders.open(raw)
+                println("      container=${decoded.container} last=${Decoders.lastContainer}")
+                if (decoded.container != Decoders.Container.FLAC) {
+                    error("expected FLAC, got ${decoded.container}")
+                }
+                if (Decoders.lastContainer != decoded.container) error("lastContainer not updated")
+                decoded.stream.close()
+            }
+        }
     }
 
     // ------------------------------------------------------------- extension

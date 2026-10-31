@@ -80,6 +80,16 @@ tasks.register<JavaExec>("selfCheck") {
     classpath = sourceSets["main"].runtimeClasspath
 }
 
+// Opens every screen in a real window and exits non-zero if one of them throws.
+tasks.register<JavaExec>("uiSmoke") {
+    group = "verification"
+    description = "Renders every screen once to catch composition errors."
+    mainClass.set("dev.gladix.desktop.UiSmokeKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    jvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
+    standardOutput = System.out
+}
+
 // Publishes a fake media session so the Windows shell integration can be probed
 // from outside (taskbar flyout, media keys).
 tasks.register<JavaExec>("mediaProbe") {

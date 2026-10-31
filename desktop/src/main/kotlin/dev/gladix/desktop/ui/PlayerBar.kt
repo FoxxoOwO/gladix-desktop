@@ -13,18 +13,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
-import androidx.compose.material.icons.rounded.VolumeOff
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -80,7 +80,7 @@ fun PlayerBar(
                     if (track != null) {
                         Cover(track.cover, Modifier.size(52.dp), corner = 8.dp)
                         Spacer(Modifier.width(10.dp))
-                        Column {
+                        Column(Modifier.weight(1f, fill = false)) {
                             Text(
                                 text = track.title,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -96,6 +96,8 @@ fun PlayerBar(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
+                        Spacer(Modifier.width(12.dp))
+                        QualityChip(state)
                     } else {
                         Text(
                             text = UiStrings.s.nothingPlayingShort,
@@ -176,7 +178,10 @@ fun PlayerBar(
                         }
                     }
                     IconButton(onClick = onOpenQueue) {
-                        Icon(Icons.Rounded.QueueMusic, contentDescription = "Fronta")
+                        Icon(Icons.AutoMirrored.Rounded.QueueMusic, contentDescription = UiStrings.s.navQueue)
+                    }
+                    if (track != null) {
+                        TrackMenuButton(state, track)
                     }
                     VolumeControl(player)
                 }
@@ -233,8 +238,8 @@ private fun VolumeControl(player: PlayerController) {
             }
         }) {
             Icon(
-                imageVector = if (muted || player.volume <= 0.01f) Icons.Rounded.VolumeOff
-                else Icons.Rounded.VolumeUp,
+                imageVector = if (muted || player.volume <= 0.01f) Icons.AutoMirrored.Rounded.VolumeOff
+                else Icons.AutoMirrored.Rounded.VolumeUp,
                 contentDescription = UiStrings.s.volume
             )
         }
