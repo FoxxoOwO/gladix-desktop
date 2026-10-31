@@ -168,6 +168,7 @@ fun TrackRow(
     modifier: Modifier = Modifier,
     showCover: Boolean = true,
     trailing: @Composable (() -> Unit)? = null,
+    menu: @Composable (() -> Unit)? = null,
     secondary: (@Composable () -> Unit)? = null
 ) {
     val highlight = if (isCurrent) MaterialTheme.colorScheme.primary
@@ -237,6 +238,7 @@ fun TrackRow(
             )
         }
         trailing?.invoke()
+        menu?.invoke()
     }
 }
 

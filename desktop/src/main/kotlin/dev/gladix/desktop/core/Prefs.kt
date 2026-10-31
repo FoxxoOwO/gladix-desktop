@@ -102,6 +102,12 @@ class PrefsSettings(val file: File = AppPaths.settingsFile) : Settings {
 
         /** UI language of the app itself (`cs`/`en`), not the Deezer content language. */
         const val KEY_UI_LANG = "desktop_ui_lang"
+
+        /** `desktop_sort_field_<scope>`: sort field of one track list (album, playlist, queue...). */
+        const val KEY_SORT_FIELD_PREFIX = "desktop_sort_field_"
+
+        /** `desktop_sort_reversed_<scope>`: whether that list is shown reversed. */
+        const val KEY_SORT_REVERSED_PREFIX = "desktop_sort_reversed_"
     }
 }
 

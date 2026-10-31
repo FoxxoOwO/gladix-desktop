@@ -30,6 +30,9 @@ class AudioEngine(private val scope: CoroutineScope) {
     var onPosition: ((Long) -> Unit)? = null
     var onPlayingChanged: ((Boolean) -> Unit)? = null
 
+    /** Called once per opened stream with the decoded format and its container. */
+    var onFormat: ((StreamQuality) -> Unit)? = null
+
     private var job: Job? = null
     private var session = 0
 
@@ -119,8 +122,17 @@ class AudioEngine(private val scope: CoroutineScope) {
 
     /** Returns true when the stream played to its end. */
     private suspend fun decode(input: InputStream, startMs: Long, mySession: Int): Boolean {
-        val audio = Decoders.openPcm(input)
+        val decoded = Decoders.open(input)
+        val audio = decoded.stream
         val pcm = audio.format
+        onFormat?.invoke(
+            StreamQuality(
+                container = decoded.container,
+                sampleRate = pcm.sampleRate.toInt(),
+                channels = pcm.channels,
+                bitsPerSample = pcm.sampleSizeInBits
+            )
+        )
 
         val rate = pcm.sampleRate.toInt().coerceAtLeast(1)
         val frameSize = pcm.frameSize.coerceAtLeast(1)

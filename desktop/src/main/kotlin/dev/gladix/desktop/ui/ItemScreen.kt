@@ -76,7 +76,8 @@ fun ItemScreen(state: AppState, item: EchoMediaItem) {
             ),
             loadDetail = { state.ctx.client.albumDetail(item) },
             loadTracks = { state.ctx.client.albumTrackPager(item).loadAll() },
-            loadShelves = { state.ctx.client.albumShelves(item) }
+            loadShelves = { state.ctx.client.albumShelves(item) },
+            sortScope = "album"
         )
 
         is Playlist -> CollectionScreen(
@@ -92,7 +93,8 @@ fun ItemScreen(state: AppState, item: EchoMediaItem) {
             ),
             loadDetail = { state.ctx.client.playlistDetail(item) },
             loadTracks = { state.ctx.client.playlistTrackPager(item).loadAll() },
-            loadShelves = { state.ctx.client.playlistShelves(item) }
+            loadShelves = { state.ctx.client.playlistShelves(item) },
+            sortScope = "playlist"
         )
 
         is Artist -> ArtistScreen(state, item)
@@ -186,7 +188,8 @@ private fun <T> CollectionScreen(
     meta: String?,
     loadDetail: suspend () -> T,
     loadTracks: suspend () -> List<Track>,
-    loadShelves: suspend () -> List<dev.brahmkshatriya.echo.common.models.Shelf>
+    loadShelves: suspend () -> List<dev.brahmkshatriya.echo.common.models.Shelf>,
+    sortScope: String
 ) {
     val detail = rememberLoader(item.id) { runCatching { loadDetail() }.getOrNull() }
     val tracks = rememberLoader(item.id) { loadTracks() }
@@ -194,6 +197,8 @@ private fun <T> CollectionScreen(
 
     val list = tracks.data ?: emptyList()
     val scope = rememberCoroutineScope()
+    val sort = remember(sortScope) { SortState(state.ctx.settings, sortScope) }
+    val shown = sort.spec.apply(list)
     var liked by remember(item.id) { mutableStateOf(false) }
     var saved by remember(item.id) { mutableStateOf(false) }
 
@@ -217,15 +222,15 @@ private fun <T> CollectionScreen(
                 meta = meta,
                 actions = {
                     PlayButton(
-                        onClick = { playAll(state, list) },
+                        onClick = { playAll(state, shown) },
                         isPlaying = state.ctx.player.isPlaying &&
-                            list.any { it.id == state.ctx.player.current?.id }
+                            shown.any { it.id == state.ctx.player.current?.id }
                     )
                     Spacer(Modifier.width(10.dp))
                     IconButton(onClick = {
-                        if (list.isEmpty()) return@IconButton
+                        if (shown.isEmpty()) return@IconButton
                         state.ctx.player.toggleShuffle()
-                        playTrack(state, list.random(), list)
+                        playTrack(state, shown.random(), shown)
                     }) {
                         Icon(Icons.Rounded.Shuffle, contentDescription = UiStrings.s.shuffle)
                     }
@@ -302,6 +307,7 @@ private fun <T> CollectionScreen(
                     }) {
                         Icon(Icons.Rounded.Share, contentDescription = UiStrings.s.share)
                     }
+                    SortControls(sort)
                 }
             )
         }
@@ -311,8 +317,8 @@ private fun <T> CollectionScreen(
             tracks.error != null -> item {
                 ErrorBox(tracks.error!!) { tracks.reload() }
             }
-            else -> items(list) { track ->
-                val index = list.indexOf(track)
+            else -> items(shown) { track ->
+                val index = shown.indexOf(track)
                 val isCurrent = state.ctx.player.current?.id == track.id
                 Box(Modifier.padding(horizontal = 12.dp)) {
                     TrackRow(
@@ -320,8 +326,9 @@ private fun <T> CollectionScreen(
                         index = index,
                         isCurrent = isCurrent,
                         isPlaying = isCurrent && state.ctx.player.isPlaying,
-                        onClick = { playTrack(state, track, list) },
-                        trailing = { DownloadButton(state, track) }
+                        onClick = { playTrack(state, track, shown) },
+                        trailing = { DownloadButton(state, track) },
+                        menu = { TrackMenuButton(state, track) }
                     )
                 }
             }
