@@ -8,9 +8,9 @@ Android UI with a Compose Desktop UI.
 
 [![Latest release](https://img.shields.io/github/v/release/FoxxoOwO/gladix-desktop)](https://github.com/FoxxoOwO/gladix-desktop/releases/latest)
 
-**Stažení:** [Gladix-1.1.2-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — rozbalte a spusťte `Gladix\Gladix.exe`, JDK není potřeba.
+**Stažení:** [Gladix-1.1.3-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — rozbalte a spusťte `Gladix\Gladix.exe`, JDK není potřeba.
 
-**Download:** [Gladix-1.1.2-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — unzip and run `Gladix\Gladix.exe`, no JDK needed.
+**Download:** [Gladix-1.1.3-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — unzip and run `Gladix\Gladix.exe`, no JDK needed.
 
 ---
 
@@ -70,12 +70,13 @@ Nastavení s přepínačem Windows integrace:
 | Přehrávání — volba kvality FLAC / 320 / 128 | ✅ automatický pokles na dostupnou |
 | Přehrávač: play/pause, další/předchozí, seek, hlasitost | ✅ |
 | Náhodné přehrávání a opakování (off / vše / jedna) | ✅ |
-| Fronta přehrávání s přesouváním a mazáním, uložená mezi spuštěními | ✅ |
+| Fronta přehrávání s přesouváním, mazáním a zavřením zpět na předchozí obrazovku | ✅ uložená mezi spuštěními |
+| Přehrání skladby z knihovny zařadí do fronty celou záložku v zobrazeném pořadí | ✅ |
 | Historie přehrávání (posledních 250 skladeb) | ✅ |
 | Stahování skladeb na disk (FLAC i MP3) | ✅ |
 | Stahování celého alba / playlistu jedním klikem | ✅ |
 | Přehrávání stažených souborů z disku | ✅ |
-| Texty písní | ✅ |
+| Texty písní (Deezer, s doplněním z lrclib.net) | ✅ |
 | Lajky, ukládání do knihovny, sledování interpretů | ✅ |
 | Sdílení odkazu (do schránky) | ✅ |
 | Nastavení: kvalita, země, jazyk, proxy, Deezer logging | ✅ |
@@ -165,7 +166,7 @@ gradlew.bat :desktop:createDistributable
 
 Výsledek: `desktop\build\compose\binaries\main\app\Gladix\Gladix.exe` — samostatná
 složka s vlastním JVM runtime, běží bez instalace JDK. Pro distribuci zabalte tuto
-složku do ZIPu (to dělá `release\Gladix-1.1.2-windows-x64.zip`).
+složku do ZIPu (to dělá `release\Gladix-1.1.3-windows-x64.zip`).
 
 Při prvním spuštění si aplikace vytvoří zástupce
 `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Gladix.lnk`. Není to nepořádek —
@@ -283,6 +284,7 @@ desktop/
       TrackMenu.kt       kontextové menu skladby a ukládání do playlistu
       Sort.kt            logika řazení a její uložení
       SortSheet.kt       sheet Řazení a filtr
+  core/Lrclib.kt         záložní zdroj textů (lrclib.net)
 testdata/                vzorky pro selfCheck
 ```
 
@@ -356,12 +358,12 @@ Settings with the Windows integration toggle:
 | Playback — quality FLAC / 320 / 128 | ✅ falls back to the best available |
 | Player: play/pause, next/previous, seek, volume | ✅ |
 | Shuffle and repeat (off / all / one) | ✅ |
-| Playback queue with reordering and removal, saved between launches | ✅ |
+| Playback queue with reordering, removal and a close button back to the previous screen | ✅ saved between launches |
 | Playback history (last 250 tracks) | ✅ |
 | Downloading tracks to disk (FLAC and MP3) | ✅ |
 | Downloading a whole album / playlist in one click | ✅ |
 | Playing downloaded files from disk | ✅ |
-| Lyrics | ✅ |
+| Lyrics (Deezer, with an lrclib.net fallback) | ✅ |
 | Likes, saving to library, following artists | ✅ |
 | Sharing a link (to the clipboard) | ✅ |
 | Settings: quality, country, language, proxy, Deezer scrobbling | ✅ |
@@ -409,9 +411,9 @@ java desktop\icons\IconGenerator.java
   by injecting VK_MEDIA_PLAY_PAUSE, VK_MEDIA_NEXT_TRACK and VK_MEDIA_PREV_TRACK — the
   shell state flipped to Playing and the position moved).
 
-What is **not** verified: downloading a whole album, lyrics and radio were written
-against the same API as the rest, but have not been exercised by hand with a live
-account.
+What is **not** verified: downloading a whole album and radio were written against the
+same API as the rest, but have not been exercised by hand with a live account. Lyrics
+are verified on a live account, both from Deezer and from the lrclib.net fallback.
 
 ### Requirements
 
@@ -453,7 +455,7 @@ gradlew.bat :desktop:createDistributable
 
 Result: `desktop\build\compose\binaries\main\app\Gladix\Gladix.exe` — a self-contained
 folder with its own JVM runtime, so no JDK installation is needed. For distribution,
-zip that folder (which is what `release\Gladix-1.1.2-windows-x64.zip` does).
+zip that folder (which is what `release\Gladix-1.1.3-windows-x64.zip` does).
 
 On first launch the app creates a shortcut at
 `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Gladix.lnk`. That is not clutter:
@@ -573,6 +575,7 @@ desktop/
       TrackMenu.kt       track context menu and save-to-playlist
       Sort.kt            sort logic and how it is persisted
       SortSheet.kt       the sort and filter sheet
+  core/Lrclib.kt         fallback lyric source (lrclib.net)
 testdata/                samples for selfCheck
 ```
 

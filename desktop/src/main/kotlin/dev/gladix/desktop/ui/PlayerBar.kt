@@ -51,7 +51,12 @@ import kotlinx.coroutines.launch
 fun PlayerBar(
     state: AppState,
     onOpenQueue: () -> Unit,
-    onOpenNowPlaying: () -> Unit
+    onOpenNowPlaying: () -> Unit,
+    /**
+     * Off while the now playing screen is open: that screen draws its own seek
+     * bar, so keeping this one visible showed the same progress twice.
+     */
+    showProgress: Boolean = true
 ) {
     val player = state.ctx.player
     val track = player.current
@@ -63,7 +68,7 @@ fun PlayerBar(
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            SeekBar(player)
+            if (showProgress) SeekBar(player)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically

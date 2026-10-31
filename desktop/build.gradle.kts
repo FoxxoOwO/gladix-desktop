@@ -45,7 +45,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "Gladix"
-            packageVersion = "1.1.2"
+            packageVersion = "1.1.3"
             description = "Gladix for Windows - Deezer music player"
             vendor = "Gladix Desktop"
 

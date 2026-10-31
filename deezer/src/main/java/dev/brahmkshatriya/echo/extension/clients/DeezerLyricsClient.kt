@@ -17,9 +17,13 @@ class DeezerLyricsClient(private val api: DeezerApi) {
     fun searchTrackLyrics(track: Track): Feed<Lyrics> = PagedData.Single {
         try {
             val jsonObject = api.lyrics(track.id)
-            val dataObject = jsonObject["data"]!!.jsonObject
-            val trackObject = dataObject["track"]!!.jsonObject
-            val lyricsObject = trackObject["lyrics"]!!.jsonObject
+            val dataObject = jsonObject["data"]?.jsonObject ?: return@Single emptyList()
+            val trackObject = dataObject["track"]?.jsonObject ?: return@Single emptyList()
+            // Deezer answers with "lyrics": null for tracks it has no words for.
+            val lyricsObject = trackObject["lyrics"]
+                ?.takeIf { it != JsonNull }
+                ?.jsonObject
+                ?: return@Single emptyList()
             val lyricsId = lyricsObject["id"]?.jsonPrimitive?.content ?: ""
             val lyrics = if (lyricsObject["synchronizedLines"] != JsonNull) {
                 val linesArray = lyricsObject["synchronizedLines"]!!.jsonArray

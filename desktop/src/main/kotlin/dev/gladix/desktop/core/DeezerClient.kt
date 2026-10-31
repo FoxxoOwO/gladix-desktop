@@ -167,11 +167,17 @@ class DeezerClient(val settings: PrefsSettings) {
 
     // ----------------------------------------------------------------- lyrics
 
-    suspend fun lyrics(track: Track): String? = runCatching {
-        val feed = extension.searchTrackLyrics("desktop", track)
-        val entry = feed.allItems().firstOrNull() ?: return@runCatching null
-        lyricToText(entry.lyrics)
-    }.getOrNull()
+    suspend fun lyrics(track: Track): String? {
+        val fromDeezer = runCatching {
+            val feed = extension.searchTrackLyrics("desktop", track)
+            val entry = feed.allItems().firstOrNull() ?: return@runCatching null
+            lyricToText(entry.lyrics)
+        }.getOrNull()
+        if (!fromDeezer.isNullOrBlank()) return fromDeezer
+        // Deezer carries no words for a good part of the catalogue, so fall back
+        // to the free lrclib.net database instead of showing an empty pane.
+        return Lrclib.lyrics(track)
+    }
 
     private fun lyricToText(lyric: Lyrics.Lyric?): String? = when (lyric) {
         null -> null
