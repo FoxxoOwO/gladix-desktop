@@ -8,9 +8,9 @@ Android UI with a Compose Desktop UI.
 
 [![Latest release](https://img.shields.io/github/v/release/FoxxoOwO/gladix-desktop)](https://github.com/FoxxoOwO/gladix-desktop/releases/latest)
 
-**Stažení:** [Gladix-1.0.0-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — rozbalte a spusťte `Gladix\Gladix.exe`, JDK není potřeba.
+**Stažení:** [Gladix-1.1.0-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — rozbalte a spusťte `Gladix\Gladix.exe`, JDK není potřeba.
 
-**Download:** [Gladix-1.0.0-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — unzip and run `Gladix\Gladix.exe`, no JDK needed.
+**Download:** [Gladix-1.1.0-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — unzip and run `Gladix\Gladix.exe`, no JDK needed.
 
 ---
 
@@ -165,7 +165,7 @@ gradlew.bat :desktop:createDistributable
 
 Výsledek: `desktop\build\compose\binaries\main\app\Gladix\Gladix.exe` — samostatná
 složka s vlastním JVM runtime, běží bez instalace JDK. Pro distribuci zabalte tuto
-složku do ZIPu (to dělá `release\Gladix-1.0.0-windows-x64.zip`).
+složku do ZIPu (to dělá `release\Gladix-1.1.0-windows-x64.zip`).
 
 Při prvním spuštění si aplikace vytvoří zástupce
 `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Gladix.lnk`. Není to nepořádek —
@@ -452,7 +452,7 @@ gradlew.bat :desktop:createDistributable
 
 Result: `desktop\build\compose\binaries\main\app\Gladix\Gladix.exe` — a self-contained
 folder with its own JVM runtime, so no JDK installation is needed. For distribution,
-zip that folder (which is what `release\Gladix-1.0.0-windows-x64.zip` does).
+zip that folder (which is what `release\Gladix-1.1.0-windows-x64.zip` does).
 
 On first launch the app creates a shortcut at
 `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Gladix.lnk`. That is not clutter:
