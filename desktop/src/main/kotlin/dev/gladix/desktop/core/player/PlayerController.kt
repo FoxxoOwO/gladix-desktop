@@ -167,6 +167,13 @@ class PlayerController(
         startCurrent(0L)
     }
 
+    /** Switches playback to a specific track index already present in [queue]. */
+    fun playAt(targetIndex: Int) {
+        if (targetIndex !in queue.indices) return
+        index = targetIndex
+        startCurrent(0L)
+    }
+
     fun addNext(track: Track) {
         val insertAt = (index + 1).coerceIn(0, queue.size)
         queue = queue.toMutableList().apply { add(insertAt, track) }

@@ -87,9 +87,11 @@ fun DownloadsScreen(state: AppState) {
             EmptyBox(UiStrings.s.nothingDownloaded)
             return@Column
         }
+        val itemsByTrackId = remember(items) { items.associateBy { it.track.id } }
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
-            items(shown) { track ->
-                val entry = items.first { it.track.id == track.id }
+            items(shown.size) { index ->
+                val track = shown[index]
+                val entry = itemsByTrackId[track.id] ?: return@items
                 val isCurrent = player.current?.id == entry.track.id
                 TrackRow(
                     track = entry.track,
@@ -97,7 +99,7 @@ fun DownloadsScreen(state: AppState) {
                     isCurrent = isCurrent,
                     isPlaying = isCurrent && player.isPlaying,
                     onClick = {
-                        player.playList(shown, shown.indexOf(track))
+                        player.playList(shown, index)
                     },
                     secondary = {
                         Text(
@@ -151,14 +153,15 @@ fun HistoryScreen(state: AppState) {
             return@Column
         }
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
-            items(shown) { track ->
+            items(shown.size) { index ->
+                val track = shown[index]
                 val isCurrent = player.current?.id == track.id
                 TrackRow(
                     track = track,
                     index = null,
                     isCurrent = isCurrent,
                     isPlaying = isCurrent && player.isPlaying,
-                    onClick = { player.playList(shown, shown.indexOf(track)) },
+                    onClick = { player.playList(shown, index) },
                     menu = { TrackMenuButton(state, track) }
                 )
             }
@@ -206,15 +209,15 @@ fun QueueScreen(state: AppState) {
             return@Column
         }
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
-            items(queue) { track ->
-                val position = queue.indexOf(track)
+            items(queue.size) { position ->
+                val track = queue[position]
                 val isCurrent = position == player.index
                 TrackRow(
                     track = track,
                     index = position,
                     isCurrent = isCurrent,
                     isPlaying = isCurrent && player.isPlaying,
-                    onClick = { player.playList(queue, position, player.context) },
+                    onClick = { player.playAt(position) },
                     trailing = {
                         IconButton(onClick = { player.removeFromQueue(position) }) {
                             Icon(Icons.Rounded.Close, contentDescription = UiStrings.s.remove)

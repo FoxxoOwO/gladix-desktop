@@ -70,7 +70,7 @@ fun App(state: AppState) {
                     state = state,
                     onOpenQueue = { state.navigate(Page.Queue) },
                     onOpenNowPlaying = { if (state.ctx.player.current != null) state.navigate(Page.NowPlaying) },
-                    showProgress = state.page !is Page.NowPlaying
+                    showProgress = true
                 )
             }
         }

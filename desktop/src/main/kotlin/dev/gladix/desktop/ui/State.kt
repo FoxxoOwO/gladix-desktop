@@ -123,7 +123,8 @@ fun itemSubtitle(item: EchoMediaItem): String? = when (item) {
 }
 
 fun formatDuration(ms: Long?): String {
-    if (ms == null || ms <= 0) return ""
+    if (ms == null || ms < 0) return ""
+    if (ms == 0L) return "0:00"
     val totalSeconds = ms / 1000
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60

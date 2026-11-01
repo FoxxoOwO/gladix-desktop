@@ -206,7 +206,7 @@ private fun SeekBar(player: PlayerController) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = formatDuration(if (dragging != null) (dragging!! * 1000).toLong() else position),
+            text = formatDuration(if (dragging != null) (dragging!! * duration).toLong() else position),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
