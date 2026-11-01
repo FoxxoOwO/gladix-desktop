@@ -185,6 +185,11 @@ interface Strings {
     val openFolder: String
     val clearHistory: String
     val historyCleared: String
+    val musicCache: String
+    fun cacheSizeMb(mb: Int): String
+    fun cacheUsed(usedMb: Long): String
+    val clearCache: String
+    val cacheCleared: String
     val sectionUser: String
     val notLoggedIn: String
     val signOut: String
@@ -356,6 +361,14 @@ private object CsStrings : Strings {
     override val openFolder = "Otevřít složku"
     override val clearHistory = "Vymazat historii"
     override val historyCleared = "Historie vymazána"
+    override val musicCache = "Mezipaměť hudby"
+    override fun cacheSizeMb(mb: Int) = when (mb) {
+        0 -> "Vypnuto"
+        else -> "$mb MB"
+    }
+    override fun cacheUsed(usedMb: Long) = "Využito: $usedMb MB"
+    override val clearCache = "Vymazat mezipaměť"
+    override val cacheCleared = "Mezipaměť vymazána"
     override val sectionUser = "Účet"
     override val notLoggedIn = "Nepřihlášeno"
     override val signOut = "Odhlásit se"
@@ -528,6 +541,14 @@ private object EnStrings : Strings {
     override val openFolder = "Open folder"
     override val clearHistory = "Clear history"
     override val historyCleared = "History cleared"
+    override val musicCache = "Music cache"
+    override fun cacheSizeMb(mb: Int) = when (mb) {
+        0 -> "Disabled"
+        else -> "$mb MB"
+    }
+    override fun cacheUsed(usedMb: Long) = "Used: $usedMb MB"
+    override val clearCache = "Clear cache"
+    override val cacheCleared = "Cache cleared"
     override val sectionUser = "Account"
     override val notLoggedIn = "Not signed in"
     override val signOut = "Sign out"

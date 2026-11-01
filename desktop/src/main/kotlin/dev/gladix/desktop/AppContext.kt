@@ -1,5 +1,6 @@
 package dev.gladix.desktop
 
+import dev.gladix.desktop.core.AudioCacheManager
 import dev.gladix.desktop.core.DeezerClient
 import dev.gladix.desktop.core.DownloadManager
 import dev.gladix.desktop.core.HistoryStore
@@ -19,9 +20,10 @@ class AppContext {
 
     val settings = PrefsSettings()
     val client = DeezerClient(settings)
+    val cache = AudioCacheManager(client, settings, scope)
     val downloads = DownloadManager(client, scope)
     val history = HistoryStore()
-    val player = PlayerController(client, downloads, history, settings, scope)
+    val player = PlayerController(client, downloads, history, settings, scope, cache)
 
     /**
      * Bridges playback to the Windows media flyout. Windows then forwards the
@@ -46,6 +48,7 @@ class AppContext {
         player.restore()
         player.systemMedia = mediaSession
         mediaSession.start()
+        cache.evictIfNeeded()
     }
 
     fun restart() = scope.launch { }
