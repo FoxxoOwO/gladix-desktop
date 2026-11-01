@@ -90,58 +90,62 @@ fun NowPlayingScreen(state: AppState) {
             return@Column
         }
 
-        Row(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 8.dp)) {
-            // ------------------------------------------------- artwork + transport
-            Column(
-                modifier = Modifier.weight(1.1f).fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(Modifier.weight(1f))
-                Cover(
-                    track.cover,
-                    Modifier.fillMaxWidth(0.8f).widthIn(max = 420.dp).aspectRatio(1f),
-                    corner = 18.dp
-                )
-                Text(
-                    text = track.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 18.dp)
-                )
-                Text(
-                    text = track.artistNames(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+        Box(Modifier.fillMaxSize()) {
+            Row(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 8.dp)) {
+                // ------------------------------------------------- artwork + transport
+                Column(
+                    modifier = Modifier.weight(1.1f).fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(Modifier.weight(1f))
+                    Cover(
+                        track.cover,
+                        Modifier.fillMaxWidth(0.8f).widthIn(max = 420.dp).aspectRatio(1f),
+                        corner = 18.dp
+                    )
+                    Text(
+                        text = track.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 18.dp)
+                    )
+                    Text(
+                        text = track.artistNames(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
 
-                PositionRow(state)
-                TransportRow(state)
-                Spacer(Modifier.weight(1f))
-            }
-
-            Spacer(Modifier.width(28.dp))
-
-            // ------------------------------------------------- tabs
-            Column(Modifier.weight(1f).fillMaxHeight()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    TabButton(strings.upNext, tab == NowTab.UpNext) { tab = NowTab.UpNext }
-                    TabButton(strings.lyrics, tab == NowTab.Lyrics) { tab = NowTab.Lyrics }
-                    TabButton(strings.info, tab == NowTab.Info) { tab = NowTab.Info }
+                    /* TransportRow(state) */
+                    Spacer(Modifier.weight(1f))
                 }
-                Spacer(Modifier.height(10.dp))
-                Box(Modifier.fillMaxSize()) {
-                    when (tab) {
-                        NowTab.UpNext -> UpNextPane(state)
-                        NowTab.Lyrics -> LyricsPane(state, track, Modifier.fillMaxSize())
-                        NowTab.Info -> InfoPane(state, track)
+
+                Spacer(Modifier.width(28.dp))
+
+                // ------------------------------------------------- tabs
+                Column(Modifier.weight(1f).fillMaxHeight()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        TabButton(strings.upNext, tab == NowTab.UpNext) { tab = NowTab.UpNext }
+                        TabButton(strings.lyrics, tab == NowTab.Lyrics) { tab = NowTab.Lyrics }
+                        TabButton(strings.info, tab == NowTab.Info) { tab = NowTab.Info }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Box(Modifier.fillMaxSize()) {
+                        when (tab) {
+                            NowTab.UpNext -> UpNextPane(state)
+                            NowTab.Lyrics -> LyricsPane(state, track, Modifier.fillMaxSize())
+                            NowTab.Info -> InfoPane(state, track)
+                        }
                     }
                 }
+            }
+            Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 28.dp, vertical = 12.dp)) {
+                /* PositionRow(state) */
             }
         }
     }
@@ -275,9 +279,7 @@ private fun TransportRow(state: AppState) {
                     else -> Icons.Rounded.Repeat
                 },
                 contentDescription = strings.repeat,
-                tint = if (player.repeatMode == RepeatMode.OFF)
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                else MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -317,15 +319,16 @@ private fun UpNextPane(state: AppState) {
         return
     }
     LazyColumn(Modifier.fillMaxSize()) {
-        items(rest) { track ->
-            val position = queue.indexOf(track)
+        items(rest.size) { offset ->
+            val track = rest[offset]
+            val position = player.index + 1 + offset
             val isCurrent = position == player.index
             TrackRow(
                 track = track,
                 index = null,
                 isCurrent = isCurrent,
                 isPlaying = isCurrent && player.isPlaying,
-                onClick = { player.playList(queue, position, player.context) },
+                onClick = { player.playAt(position) },
                 menu = { TrackMenuButton(state, track) }
             )
         }

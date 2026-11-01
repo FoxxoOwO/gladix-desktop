@@ -17,7 +17,7 @@ desktop.ini
 .DS_Store
 
 # Release artifacts
-release/
+release/*.zip
 
 # Local run data
 *.properties

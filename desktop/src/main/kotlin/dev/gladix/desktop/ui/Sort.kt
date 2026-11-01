@@ -40,12 +40,14 @@ data class SortSpec(
 
     fun apply(tracks: List<Track>): List<Track> {
         if (isDefault) return tracks
+        if (field == SortField.DEFAULT) {
+            return if (reversed) tracks.reversed() else tracks
+        }
         val collator = Collator.getInstance(Locale.getDefault()).apply {
             strength = Collator.SECONDARY
         }
         val comparator: Comparator<Track> = when (field) {
-            // Reversing the original order is meaningful on its own.
-            SortField.DEFAULT -> Comparator { a, b -> tracks.indexOf(a) - tracks.indexOf(b) }
+            SortField.DEFAULT -> Comparator { _, _ -> 0 }
             SortField.TITLE -> Comparator { a, b -> collator.compare(a.title, b.title) }
             SortField.DURATION -> compareBy { it.duration ?: 0L }
             SortField.ARTISTS -> Comparator { a, b ->
@@ -70,13 +72,15 @@ data class SortSpec(
      */
     fun applyItems(items: List<EchoMediaItem>): List<EchoMediaItem> {
         if (isDefault) return items
+        if (field == SortField.DEFAULT || field == SortField.DURATION) {
+            return if (reversed) items.reversed() else items
+        }
         val collator = Collator.getInstance(Locale.getDefault()).apply {
             strength = Collator.SECONDARY
         }
         val comparator: Comparator<EchoMediaItem> = when (field) {
-            SortField.DEFAULT -> Comparator { a, b -> items.indexOf(a) - items.indexOf(b) }
+            SortField.DEFAULT, SortField.DURATION -> Comparator { _, _ -> 0 }
             SortField.TITLE -> Comparator { a, b -> collator.compare(itemTitle(a), itemTitle(b)) }
-            SortField.DURATION -> Comparator { a, b -> items.indexOf(a) - items.indexOf(b) }
             SortField.ARTISTS -> Comparator { a, b ->
                 collator.compare(itemSubtitle(a).orEmpty(), itemSubtitle(b).orEmpty())
             }
@@ -121,8 +125,7 @@ fun sortShelves(shelves: List<Shelf>, spec: SortSpec): List<Shelf> {
             is Shelf.Lists.Items ->
                 if (shelf.list.all { it is Track }) {
                     val tracks = shelf.list.filterIsInstance<Track>()
-                    val rank = spec.apply(tracks).withIndex().associate { (index, it) -> it.id to index }
-                    shelf.copy(list = shelf.list.sortedBy { rank[it.id] ?: Int.MAX_VALUE })
+                    shelf.copy(list = spec.apply(tracks))
                 } else {
                     shelf.copy(list = spec.applyItems(shelf.list))
                 }

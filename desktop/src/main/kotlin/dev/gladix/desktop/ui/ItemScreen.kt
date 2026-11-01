@@ -317,8 +317,8 @@ private fun <T> CollectionScreen(
             tracks.error != null -> item {
                 ErrorBox(tracks.error!!) { tracks.reload() }
             }
-            else -> items(shown) { track ->
-                val index = shown.indexOf(track)
+            else -> items(shown.size) { index ->
+                val track = shown[index]
                 val isCurrent = state.ctx.player.current?.id == track.id
                 Box(Modifier.padding(horizontal = 12.dp)) {
                     TrackRow(
