@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import dev.brahmkshatriya.echo.common.models.EchoMediaItem
 import dev.brahmkshatriya.echo.common.models.Track
 import dev.gladix.desktop.core.AppPaths
+import dev.gladix.desktop.core.AudioCacheManager
 import dev.gladix.desktop.core.DeezerClient
 import dev.gladix.desktop.core.DownloadManager
 import dev.gladix.desktop.core.HistoryStore
@@ -42,7 +43,8 @@ class PlayerController(
     private val downloads: DownloadManager,
     private val history: HistoryStore,
     private val settings: PrefsSettings,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val cache: AudioCacheManager? = null
 ) {
 
     private val engine = AudioEngine(scope)
@@ -398,6 +400,8 @@ class PlayerController(
                 val offline = downloads.entry(track.id)
                 if (offline != null) {
                     File(offline.path).inputStream()
+                } else if (cache != null) {
+                    cache.openStream(track)
                 } else {
                     client.openStream(track)
                 }
@@ -409,6 +413,7 @@ class PlayerController(
                 lastSystemPosition = startAt
                 publishSystemTrack()
                 scheduleScrobble(track)
+                preloadUpcomingTracks()
             } catch (t: Throwable) {
                 isBuffering = false
                 error = t.message ?: t::class.simpleName ?: "Playback failed"
@@ -424,6 +429,25 @@ class PlayerController(
                 scrobbledId = track.id
                 client.markPlayed(track, context, delayMs, track.duration)
             }
+        }
+    }
+
+    private fun preloadUpcomingTracks() {
+        if (cache == null) return
+        val nextIdx = nextIndex() ?: return
+        val nextTrack = queue.getOrNull(nextIdx) ?: return
+        cache.preload(nextTrack)
+
+        // Also preload one more in queue if available
+        val afterNextIdx = if (shuffle && shuffleOrder.isNotEmpty()) {
+            val pos = shuffleOrder.indexOf(nextIdx)
+            if (pos + 1 < shuffleOrder.size) shuffleOrder[pos + 1] else null
+        } else {
+            if (nextIdx + 1 < queue.size) nextIdx + 1 else null
+        }
+        val afterNextTrack = afterNextIdx?.let { queue.getOrNull(it) }
+        if (afterNextTrack != null) {
+            cache.preload(afterNextTrack)
         }
     }
 

@@ -303,6 +303,39 @@ fun main(args: Array<String>) {
         prefs.file.delete()
     }
 
+    check("AudioCacheManager respects limits and eviction") {
+        val prefsFile = java.io.File(AppPaths.root, "selfcheck-cache.properties")
+        prefsFile.delete()
+        val prefs = PrefsSettings(prefsFile)
+        prefs.putInt(PrefsSettings.KEY_CACHE_SIZE_MB, 1) // 1 MB limit
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
+        val client = DeezerClient(prefs)
+        val cache = dev.gladix.desktop.core.AudioCacheManager(client, prefs, scope)
+
+        // Clear cache initially
+        cache.clear()
+        if (cache.currentSizeBytes() != 0L) error("cache not cleared")
+
+        // Create dummy files in cache
+        val f1 = java.io.File(cache.cacheDir, "track1.mp3").apply { writeBytes(ByteArray(400 * 1024)) }
+        f1.setLastModified(System.currentTimeMillis() - 20_000)
+        val f2 = java.io.File(cache.cacheDir, "track2.mp3").apply { writeBytes(ByteArray(400 * 1024)) }
+        f2.setLastModified(System.currentTimeMillis() - 10_000)
+        val f3 = java.io.File(cache.cacheDir, "track3.mp3").apply { writeBytes(ByteArray(400 * 1024)) }
+        f3.setLastModified(System.currentTimeMillis())
+
+        if (cache.currentSizeBytes() < 1200 * 1024) error("files not written")
+
+        // Evict
+        cache.evictIfNeeded()
+        // Total limit is 1MB, so oldest track1 should be evicted first
+        if (f1.exists()) error("track1 should have been evicted")
+        if (!f2.exists() || !f3.exists()) error("track2 and track3 should remain")
+
+        cache.clear()
+        prefsFile.delete()
+    }
+
     // ----------------------------------------------------------------- audio
 
     check("javax.sound knows the PCM format and registers decoders") {

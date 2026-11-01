@@ -144,7 +144,8 @@ class AudioEngine(private val scope: CoroutineScope) {
             return false
         }
         val dataLine = AudioSystem.getLine(info) as SourceDataLine
-        dataLine.open(pcm, 64 * 1024)
+        // Open line with a 256 KB buffer (~1.5s of 44.1kHz 16-bit stereo) to absorb jitter
+        dataLine.open(pcm, 256 * 1024)
         line = dataLine
         usingGain = runCatching {
             dataLine.getControl(FloatControl.Type.MASTER_GAIN) != null

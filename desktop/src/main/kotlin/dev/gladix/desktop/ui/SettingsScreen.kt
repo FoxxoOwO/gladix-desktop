@@ -45,6 +45,12 @@ fun SettingsScreen(state: AppState) {
     }
     var country by remember { mutableStateOf(settings.getStringOrDefault(PrefsSettings.KEY_COUNTRY, "")) }
     var language by remember { mutableStateOf(settings.getStringOrDefault(PrefsSettings.KEY_LANGUAGE, "")) }
+    var cacheSizeMb by remember {
+        mutableStateOf(settings.getInt(PrefsSettings.KEY_CACHE_SIZE_MB) ?: PrefsSettings.DEFAULT_CACHE_SIZE_MB)
+    }
+    var cacheUsedMb by remember {
+        mutableStateOf(state.ctx.cache.currentSizeBytes() / (1024L * 1024L))
+    }
     var proxy by remember { mutableStateOf(settings.getStringOrDefault(PrefsSettings.KEY_PROXY, "")) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -218,6 +224,35 @@ fun SettingsScreen(state: AppState) {
 
         SettingsSection(strings.sectionData) {
             Text(
+                strings.musicCache,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                listOf(0, 512, 1024, 2048, 4096).forEach { mb ->
+                    FilterChip(
+                        selected = cacheSizeMb == mb,
+                        onClick = {
+                            cacheSizeMb = mb
+                            settings.putInt(PrefsSettings.KEY_CACHE_SIZE_MB, mb)
+                            state.ctx.cache.evictIfNeeded()
+                            cacheUsedMb = state.ctx.cache.currentSizeBytes() / (1024L * 1024L)
+                        },
+                        label = { Text(strings.cacheSizeMb(mb)) }
+                    )
+                }
+            }
+            Text(
+                text = strings.cacheUsed(cacheUsedMb),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+            )
+
+            Text(
                 text = strings.dataFolder(AppPaths.root.absolutePath),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -234,6 +269,11 @@ fun SettingsScreen(state: AppState) {
                         java.awt.Desktop.getDesktop().open(AppPaths.downloads)
                     }
                 }) { Text(strings.openFolder) }
+                OutlinedButton(onClick = {
+                    state.ctx.cache.clear()
+                    cacheUsedMb = 0L
+                    state.showToast(strings.cacheCleared)
+                }) { Text(strings.clearCache) }
                 OutlinedButton(onClick = {
                     state.ctx.history.clear()
                     state.showToast(strings.historyCleared)

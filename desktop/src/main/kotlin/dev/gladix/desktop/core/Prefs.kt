@@ -15,6 +15,7 @@ object AppPaths {
     }
 
     val downloads: File = File(root, "downloads").apply { mkdirs() }
+    val cache: File = File(root, "audio_cache").apply { mkdirs() }
     val images: File = File(root, "images").apply { mkdirs() }
 
     val settingsFile = File(root, "settings.properties")
@@ -99,6 +100,10 @@ class PrefsSettings(val file: File = AppPaths.settingsFile) : Settings {
         const val KEY_SEARCH_HISTORY = "history"
         const val KEY_MEDIA_SESSION = "desktop_media_session"
         const val KEY_MEDIA_KEYS = "desktop_media_keys"
+
+        /** Music audio cache size in Megabytes (MB). 0 means disabled. */
+        const val KEY_CACHE_SIZE_MB = "desktop_cache_size_mb"
+        const val DEFAULT_CACHE_SIZE_MB = 1024
 
         /** UI language of the app itself (`cs`/`en`), not the Deezer content language. */
         const val KEY_UI_LANG = "desktop_ui_lang"
