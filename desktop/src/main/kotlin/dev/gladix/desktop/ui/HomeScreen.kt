@@ -147,6 +147,7 @@ fun TabbedShelves(
                         onPlayTrack = { track, list -> playTrack(state, track, list) },
                         onPlayAll = { list -> playAll(state, list) },
                         onOpenCategory = { state.openCategory(it) },
+                        onShowAll = { state.openAll(it) },
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
 

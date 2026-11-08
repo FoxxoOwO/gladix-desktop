@@ -252,11 +252,13 @@ fun MediaCard(
     cover: ImageHolder?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    round: Boolean = false
+    round: Boolean = false,
+    /** Grids let the column stretch; horizontal strips keep the fixed card width. */
+    fillWidth: Boolean = false
 ) {
     Column(
         modifier = modifier
-            .width(160.dp)
+            .let { if (fillWidth) it else it.width(160.dp) }
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(8.dp)
@@ -341,14 +343,26 @@ fun ShelfBlock(
     onOpen: (EchoMediaItem) -> Unit,
     onPlayTrack: (Track, List<Track>) -> Unit,
     onPlayAll: (List<Track>) -> Unit,
-    onOpenCategory: (Shelf.Category) -> Unit = {}
+    onOpenCategory: (Shelf.Category) -> Unit = {},
+    /**
+     * Opens a "see everything" page. Only wired up when the shelf can keep
+     * loading more items — a fixed list of 12 albums has nothing more to show.
+     */
+    onShowAll: ((AllItems) -> Unit)? = null
 ) {
     when (shelf) {
         is Shelf.Lists.Items -> {
             val items = shelf.list
             if (items.isEmpty()) return
+            // The "more" feed is what makes an "all albums" page possible; without
+            // it the shelf is already complete and the button would be a dead end.
+            val showAll = shelf.more?.let { more ->
+                onShowAll?.let { open ->
+                    { open(AllItems.Albums(shelf.title, more)) }
+                }
+            }
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                SectionHeader(shelf.title)
+                SectionHeader(shelf.title, onMore = showAll)
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp)
@@ -446,6 +460,7 @@ fun ShelvesColumn(
     onPlayAll: (List<Track>) -> Unit,
     modifier: Modifier = Modifier,
     onOpenCategory: (Shelf.Category) -> Unit = {},
+    onShowAll: ((AllItems) -> Unit)? = null,
     header: (@Composable () -> Unit)? = null
 ) {
     LazyColumn(
@@ -453,7 +468,7 @@ fun ShelvesColumn(
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         if (header != null) item { header() }
-        shelfRows(shelves, onOpen, onPlayTrack, onPlayAll, onOpenCategory)
+        shelfRows(shelves, onOpen, onPlayTrack, onPlayAll, onOpenCategory, onShowAll)
     }
 }
 
@@ -471,7 +486,8 @@ fun LazyListScope.shelfRows(
     onOpen: (EchoMediaItem) -> Unit,
     onPlayTrack: (Track, List<Track>) -> Unit,
     onPlayAll: (List<Track>) -> Unit,
-    onOpenCategory: (Shelf.Category) -> Unit
+    onOpenCategory: (Shelf.Category) -> Unit,
+    onShowAll: ((AllItems) -> Unit)? = null
 ) {
     var i = 0
     while (i < shelves.size) {
@@ -524,7 +540,16 @@ fun LazyListScope.shelfRows(
             }
 
             else -> {
-                item { ShelfBlock(shelf, onOpen, onPlayTrack, onPlayAll, onOpenCategory) }
+                item {
+                    ShelfBlock(
+                        shelf,
+                        onOpen,
+                        onPlayTrack,
+                        onPlayAll,
+                        onOpenCategory,
+                        onShowAll
+                    )
+                }
                 i++
             }
         }

@@ -169,7 +169,8 @@ private fun ArtistScreen(state: AppState, artist: Artist) {
                         onOpen = { state.open(it) },
                         onPlayTrack = { track, tracks -> playTrack(state, track, tracks) },
                         onPlayAll = { tracks -> playAll(state, tracks) },
-                        onOpenCategory = { state.openCategory(it) }
+                        onOpenCategory = { state.openCategory(it) },
+                        onShowAll = { state.openAll(it) }
                     )
                 }
             }
@@ -343,7 +344,8 @@ private fun <T> CollectionScreen(
                         onOpen = { state.open(it) },
                         onPlayTrack = { track, tracks2 -> playTrack(state, track, tracks2) },
                         onPlayAll = { tracks2 -> playAll(state, tracks2) },
-                        onOpenCategory = { state.openCategory(it) }
+                        onOpenCategory = { state.openCategory(it) },
+                        onShowAll = { state.openAll(it) }
                     )
                 }
             }

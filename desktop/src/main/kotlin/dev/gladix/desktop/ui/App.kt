@@ -133,6 +133,7 @@ fun App(state: AppState) {
                         is Page.NowPlaying -> NowPlayingScreen(state)
                         is Page.Item -> ItemScreen(state, page.item)
                         is Page.Category -> CategoryScreen(state, page.category)
+                        is Page.All -> AllItemsScreen(state, page.all)
                     }
                 }
             }
