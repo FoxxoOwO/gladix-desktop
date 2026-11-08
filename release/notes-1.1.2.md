@@ -1,47 +1,9 @@
-Opravné vydání — řazení a filtr je nově i v knihovně, ve všech záložkách. / Bug-fix release — sorting and filtering is now in the library too, in every tab.
+Gladix Desktop 1.1.2 — bug-fix release: sorting and filtering is now in the library too, in every tab.
 
-## Ke stažení / Download
+## Download
 
-`Gladix-1.1.2-windows-x64.zip` — samostatná složka s vlastním JVM runtime, běží bez instalace JDK. Rozbalte a spusťte `Gladix\Gladix.exe`. / Self-contained folder with its own JVM runtime, no JDK needed. Unzip and run `Gladix\Gladix.exe`.
-
-```
-SHA-256  95a7639b6e5e909170f10c848863dcf5c9dc70f6a4e92a9638eccccbec41cf8e
-```
-
-## Česky
-
-**Co je nového**
-
-- **Řazení v knihovně** — ikona řazení je i nad seznamy v knihovně a otevírá stejný
-  sheet *Řazení a filtr* (Opačně, Výchozí / Název / Délka / Interpret / Album, Uložit).
-- **Všechny záložky, ne jen skladby** — řadit lze *Vše*, *Playlisty*, *Alba*, *Skladby*
-  i *Interpreti*. Alba, playlisty a interpreti se řadí podle názvu nebo interpreta.
-- **Každá záložka si pamatuje svou volbu** — seřazení skladeb nerozhodí pořadí alb;
-  volba se ukládá zvlášť a drží i po restartu.
-- **Aktivní volba je vidět** — v hlavičce se zobrazí chipy *Název*, *Opačně* apod., takže
-  není záhadou, proč je seznam přerovnaný.
-- **Sheet se už nerozbíjí** — pět voleb se vešlo do úzkého dialogu tak, že se „Album“
-  lámalo po písmenech; chipy se teď zalamují po celých slovech.
-
-**Opraveno**
-
-- Záložka *Skladby* v knihovně neposílá jeden seznam skladeb, ale tisíce jednotlivých
-  položek. Řazení s tímhle tvarem dřív nepočítalo, takže by se po kliknutí na *Použít*
-  nestalo nic. Teď se takový seznam seřadí jako celek.
-- Hlavička knihovny byla natvrdo česky („Knihovna“); v anglickém rozhraní se překládá.
-
-**Ověřeno:** `:desktop:selfCheck` (17 kontrol, včetně řazení volných položek),
-`:desktop:uiSmoke` (kód 0) a spuštění z rozbaleného ZIPu s reálným účtem: v knihovně
-šlo přepnout na *Skladby*, otevřít sheet, zvolit *Název* a seznam se přerovnal
-(`"45"`, `"Heroes"`, `(If You're Wondering…`, `1*15*96`, `155`, `19-2000`, `1981`…),
-volba se uložila do nastavení.
-
-**Známe omezení:** hromadný výběr skladeb (checkboxy) v knihovně stále není.
-
-Instalační MSI/EXE se nedodává — vyžaduje WiX Toolset a podpis kódu; použijte portable
-ZIP.
-
-## English
+`Gladix-1.1.2-windows-x64.zip` — self-contained folder with its own JVM runtime, no JDK
+needed. Unzip and run `Gladix\Gladix.exe`.
 
 **What's new**
 

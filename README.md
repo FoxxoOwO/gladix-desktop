@@ -4,299 +4,13 @@ Windows (desktop) port of [Gladix](https://github.com/rschwertley/gladix) — a 
 client. It reuses Gladix's own Kotlin modules for talking to Deezer and replaces the
 Android UI with a Compose Desktop UI.
 
-**[Česky](#česky)** · **[English](#english)**
+**[English](#english)** · **[Česky](#česky)**
 
 [![Latest release](https://img.shields.io/github/v/release/FoxxoOwO/gladix-desktop)](https://github.com/FoxxoOwO/gladix-desktop/releases/latest)
 
-**Stažení:** [Gladix-1.4.0-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — rozbalte a spusťte `Gladix\Gladix.exe`, JDK není potřeba.
+**Download:** [Gladix-1.4.1-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — unzip and run `Gladix\Gladix.exe`, no JDK needed.
 
-**Download:** [Gladix-1.4.0-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — unzip and run `Gladix\Gladix.exe`, no JDK needed.
-
----
-
-## Česky
-
-Gladix Desktop je nativní desktopová aplikace pro Windows, která přehrává hudbu z Deezeru.
-Nepoužívá prohlížeč ani webové rozhraní — je to klasická Win32 aplikace s vlastním oknem,
-která komunikuje přímo s Deezer API přes stejný kód, jaký používá Android verze.
-Rozhraní je česky i anglicky, jazyk se přepíná v nastavení.
-
-**Použité moduly z Gladixu (beze změny zdrojového kódu):**
-
-| Modul | Co dělá |
-|-------|---------|
-| `:common` | Modely (`Track`, `Album`, `Artist`, `Playlist`, `Shelf`…), `Feed`/`PagedData` stránkování, `Settings` rozhraní, `ClientException` |
-| `:deezer` | `DeezerExtension`, `DeezerApi`, login (ARL i e-mail/heslo), feedy, vyhledávání, streamy, texty písní, rádio, lajky, knihovna |
-
-Zbytek (UI, přehrávač, stahování, historie, fronta, nastavení) je nový desktopový kód.
-
-### Ukázky
-
-| Domů | Knihovna |
-|------|----------|
-| ![Domů](docs/screenshots/home.png) | ![Knihovna](docs/screenshots/library.png) |
-
-| Hledání | Album s přehráváním |
-|---------|---------------------|
-| ![Hledání](docs/screenshots/search.png) | ![Album](docs/screenshots/album-playing.png) |
-
-Widget přehrávání v rychlých nastaveních Windows:
-
-![Windows media card](docs/screenshots/windows-media-card.png)
-
-Nastavení s přepínačem Windows integrace:
-
-![Nastavení](docs/screenshots/settings.png)
-
-### Funkce
-
-| Funkce | Stav |
-|--------|------|
-| Přihlášení ARL cookie | ✅ |
-| Přihlášení e-mailem a heslem | ✅ |
-| Uložení přihlášení mezi spuštěními | ✅ |
-| Jazyk rozhraní: čeština a angličtina (přepínač v nastavení) | ✅ |
-| Domovská stránka (doporučené feedy s taby) | ✅ |
-| Vyhledávání skladeb, alb, interpretů, playlistů | ✅ |
-| Historie hledání | ✅ |
-| Knihovna (feedy) | ✅ |
-| Detail alba / interpreta / playlistu | ✅ |
-| Kontextové menu skladby (přehrát, další, fronta, knihovna, lajky, playlist, stahování, interpret, album, rádio, sdílení) | ✅ |
-| Ukládání skladby do playlistu (i vytvoření nového playlistu) | ✅ |
-| Ukazatel skutečné kvality přehrávaného streamu (např. `FLAC · 44.1 kHz · 2ch`) | ✅ měřeno dekodérem, ne nastavením |
-| Obrazovka Přehrává se: velký obal, ovládání, taby Následuje / Text písně / Informace | ✅ |
-| Řazení a filtr seznamu skladeb (název, délka, interpret, album, opačně) s volitelným uložením | ✅ včetně všech záložek knihovny |
-| Rádio z alba, interpreta, playlistu, skladby | ✅ |
-| Přehrávání — volba kvality FLAC / 320 / 128 | ✅ automatický pokles na dostupnou |
-| Přehrávač: play/pause, další/předchozí, seek, hlasitost | ✅ |
-| Náhodné přehrávání a opakování (off / vše / jedna) | ✅ |
-| Fronta přehrávání s přesouváním, mazáním a zavřením zpět na předchozí obrazovku | ✅ uložená mezi spuštěními |
-| Přehrání skladby z knihovny zařadí do fronty celou záložku v zobrazeném pořadí | ✅ |
-| Historie přehrávání (posledních 250 skladeb) | ✅ |
-| Stahování skladeb na disk (FLAC i MP3) | ✅ |
-| Stahování celého alba / playlistu jedním klikem | ✅ |
-| Přehrávání stažených souborů z disku | ✅ |
-| Texty písní (Deezer, s doplněním z lrclib.net) | ✅ |
-| Lajky, ukládání do knihovny, sledování interpretů | ✅ |
-| Sdílení odkazu (do schránky) | ✅ |
-| Nastavení: kvalita, země, jazyk, proxy, Deezer logging | ✅ |
-| Ovládání mediálními klávesami (přehrát/pauza, další, předchozí) | ✅ přes Windows SMTC |
-| Přehrávání v rychlých nastaveních Windows (název, interpret, obal, seek) | ✅ |
-| Světlý/tmavý režim | ⚠️ jen tmavý (téma je připravené) |
-| Android Auto, Android TV, Chromecast | ❌ neportsovatelné |
-| Lokální soubory mimo Deezer | ❌ mimo rozsah |
-| Plugin systém pro jiné rozšíření | ❌ Deezer je zabudovaný |
-
-### Ikona
-
-Ikona se negeneruje ručně v grafickém editoru, ale kódem — `desktop/icons/IconGenerator.java`
-(AWT, bez závislostí) kreslí fialovou dlaždici s notou a zapisuje:
-
-| Soubor | K čemu |
-|--------|--------|
-| `desktop/icons/icon.ico` | vícesize ikona (16–256 px) pro `Gladix.exe`, MSI/EXE instalátor i zástupce |
-| `desktop/icons/icon-256.png`, `icon-512.png` | PNG pro README, store a dokumentaci |
-| `desktop/icons/icon-preview.png` | kontrola čitelnosti v malých velikostech |
-| `desktop/src/main/resources/icon.png` | ikona okna a taskbaru (zabalená v jaru) |
-
-Přegenerování po změně kresby:
-
-```bat
-java desktop\icons\IconGenerator.java
-```
-
-### Ověřeno
-
-- `gradlew.bat :desktop:selfCheck` — všechny kontroly procházejí (serializace, nastavení,
-  žebříček kvalit, dekódování MP3 i FLAC z `testdata/`, řazení seznamů, popisek měřené
-  kvality streamu).
-- `gradlew.bat :desktop:uiSmoke` — projde všech 9 obrazovek, sheet řazení, kontextové
-  menu skladby i dialog ukládání do playlistu v reálném okně a skončí s kódem 0.
-- Sestavení a spuštění z `Gladix.exe` bez chyb a bez varování v logu.
-- Přihlášení reálným Deezer účtem, načtení domovského feedu (recently played, mixy,
-  playlisty, Flow, doporučení), knihovny a detailu alba.
-- Přehrávání reálného streamu: pozice se posouvá v reálném čase (0:05 → 0:13),
-  ovládání play/pause reaguje v přehrávacím pruhu i v hlavičce.
-- Windows integrace: přehrávání se objeví v rychlých nastaveních (Win+A) s názvem
-  skladby, interpretem, obalem alba a tlačítky ⏮ ▶/⏸ ⏭; mediální klávesy na
-  klávesnici skutečně přepínají přehrávání (ověřeno vložením VK_MEDIA_PLAY_PAUSE,
-  VK_MEDIA_NEXT_TRACK a VK_MEDIA_PREV_TRACK — stav se v shellu změnil na Playing
-  a pozice se rozjela).
-
-Co ověřeno **není**: stažení celého alba, texty písní a rádio byly napsány proti
-stejnému API jako zbytek, ale neprošly ruční zkouškou s živým účtem.
-
-### Požadavky
-
-- Windows 10/11 (x64)
-- JDK 17 nebo novější pro sestavení (testováno na JDK 24; aplikace samotná si nese vlastní runtime)
-
-### Sestavení a spuštění
-
-```bat
-gradlew.bat :desktop:run
-```
-
-### Testy
-
-```bat
-gradlew.bat :desktop:selfCheck
-```
-
-`selfCheck` je headless sada kontrol, které nepotřebují Deezer účet: serializace
-ukládaných modelů, nastavení, žebříček kvalit, dekódování reálného MP3 a FLAC souboru
-(`testdata/`), převod na PCM pro zvukovou kartu, řazení seznamů a popisek měřené
-kvality streamu.
-
-```bat
-gradlew.bat :desktop:uiSmoke
-```
-
-`uiSmoke` otevře reálné okno a projde postupně všechny obrazovky (Domů, Hledání,
-Knihovna, Stažené, Historie, Fronta, Nastavení, Přehrává se, detail alba) a navíc
-sheet řazení, kontextové menu skladby a dialog ukládání do playlistu. Když některý
-composable spadne, skončí nenulovým kódem - to odhalí chyby, které `selfCheck`
-nevidí (ikona, scope `weight`, chybějící řetězec). Účet nepotřebuje.
-
-### Sestavení Windows aplikace
-
-```bat
-gradlew.bat :desktop:createDistributable
-```
-
-Výsledek: `desktop\build\compose\binaries\main\app\Gladix\Gladix.exe` — samostatná
-složka s vlastním JVM runtime, běží bez instalace JDK. Pro distribuci zabalte tuto
-složku do ZIPu (to dělá `release\Gladix-1.1.3-windows-x64.zip`).
-
-Při prvním spuštění si aplikace vytvoří zástupce
-`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Gladix.lnk`. Není to nepořádek —
-bez něj Windows nezobrazí v rychlých nastaveních jméno „Gladix“ ani ikonu
-(viz část Jak to funguje).
-
-Instalační MSI/EXE (`packageMsi`, `packageExe`) vyžaduje
-[WiX Toolset 3](https://github.com/wixtoolset/wix3/releases) v `PATH` a oprávnění
-administrátora při instalaci WiX:
-
-```bat
-gradlew.bat :desktop:packageMsi
-```
-
-### Kde jsou data
-
-`%APPDATA%\Gladix\`
-
-```
-settings.properties   nastavení
-user.json             přihlašovací údaje (ARL / e-mail, heslo)
-queue.json            fronta přehrávání
-history.json          historie přehrávání
-downloads.json        seznam stažených skladeb
-downloads\            stažené soubory .flac / .mp3
-```
-
-Smazáním složky se aplikace vrátí do stavu po instalaci.
-
-### Jak to funguje
-
-**Přihlášení.** `DeezerExtension.onLogin()` vrací `User`, jehož `extras` obsahují
-`arl`, `sid`, `token`, `license_token`, `user_id`, `email` a `pass`. Celý objekt se
-uloží jako JSON a při startu se předá zpět do `setLoginUser()`, takže se relace obnoví
-bez opakovaného zadávání údajů.
-
-**Přehrávání.** Extension vrací `Streamable.Source.Raw`, jehož `InputProvider.provide()`
-dává už **dešifrovaný** proud bytů (Deezer posílá data zašifrovaná Blowfishem, `:deezer`
-modul to řeší sám). Desktop tedy nepotřebuje lokální HTTP proxy — čte proud přímo a
-krmí jím zvukový dekodér.
-
-**Dekódování.** MP3 a FLAC přes javax.sound s providery `mp3spi` a `jflac-codec`.
-Důležité: `AudioSystem.getAudioInputStream(InputStream)` se **nepoužívá** pro detekci
-formátu, protože FLAC reader je zkoušen první a na MP3 souboru vyhodí `IOException`
-místo `UnsupportedAudioFileException` — tím by selhalo každé MP3. Místo toho se podle
-hlavičky souboru (`fLaC`, `RIFF`, `ID3`, MPEG sync) vybere konkrétní reader přímo
-(`core/player/Decoders.kt`).
-
-**Seek.** Stream se otevře znovu od začátku a dekódované vzorky se zahazují až do
-požadované pozice. Je to pomalejší než byte-range seek, ale jediné správné řešení pro
-FLAC (který nemá obnovovací body uprostřed souboru) a pro MP3 bez znalosti bitrate.
-
-**Stahování.** Stahuje se stejný dešifrovaný proud jako při přehrávání, do souboru
-`<id>.part`, a po dokončení se podle hlavičky přejmenuje na `.flac` / `.mp3` / `.wav`.
-
-**Ukazatel kvality.** Nastavení kvality je jen přání: Deezer u skladby, která ve FLAC
-nevyšla, vrátí MP3, a `DeezerClient` proto zkouší 9 → 6 → 3 → 0, dokud něco nepřijde.
-Pill v přehrávači ukazuje, co **skutečně** přišlo — `Decoders.open()` vrátí kromě PCM
-proudu i rozpoznaný kontejner a formát, `PlayerController.streamQuality` to vystaví a
-`StreamQuality.label` z toho složí text jako `FLAC · 44.1 kHz · 2ch`. Před přepnutím
-skladby se hodnota vynuluje, aby na obrazovce nikdy nezůstala kvalita té předchozí.
-
-**Windows a mediální klávesy.** Přehrávač publikuje stav do System Media Transport
-Controls (SMTC) přes knihovnu `JavaMediaTransportControls`; z toho žije widget v
-rychlých nastaveních i směrování hardwarových mediálních kláves — vlastní hook na
-klávesnici není potřeba a ani se nepoužívá (jinak by klávesa přišla dvakrát).
-Dvě věci jsou háklivé:
-
-1. `SetCurrentProcessExplicitAppUserModelID` je **wide** API. Když se mu předá
-   obyčejný `String`, JNA ho zkonvertuje na ANSI bajty a shell je přečte jako UTF-16,
-   takže id vznikne jako nesmysl. Proto se předává `WString`.
-2. Id se ve shellu přeloží na jméno a ikonu jen tehdy, když ho nese **zástupce
-   v nabídce Start** jako vlastnost `System.AppUserModel.ID`. Zápis do registru
-   `HKCU\Software\Classes\AppUserModelId` na widget v rychlých nastaveních nestačí.
-   Proto aplikace při prvním spuštění sama vytvoří `Gladix.lnk` (přes `IShellLink`,
-   `IPropertyStore` a `IPersistFile` z JNA) — portable build totiž žádný instalátor,
-   který by to udělal, nemá.
-
-Obal alba se do SMTC nedá předat přímo: obal knihovny předává nativní části `file:`
-URI, kterou `StorageFile::GetFileFromPathAsync` neotevře, a navíc na výsledek čeká bez
-časového limitu. Proto se obal stáhne do `%APPDATA%\Gladix\images` a do nativní vrstvy
-se předá přes reflextí získaný adaptér se skutečnou cestou a s timeoutem.
-
-### Struktura
-
-```
-common/    převzato z Gladixu, beze změny
-deezer/    převzato z Gladixu, beze změny
-desktop/
-  icons/
-    IconGenerator.java   generátor ikony (ICO + PNG), viz část Ikona
-  src/main/kotlin/dev/gladix/desktop/
-    Main.kt              vstupní bod, okno
-    SelfCheck.kt         headless testy
-    UiSmoke.kt           projde všechny obrazovky v reálném okně
-    AppContext.kt        sdílené závislosti
-    core/
-      Prefs.kt           cesty, nastavení, JSON
-      Images.kt          načítání a cache obrázků
-      DeezerClient.kt    obal nad DeezerExtension
-      Downloads.kt       stahování na disk
-      History.kt         historie přehrávání
-      player/
-        Decoders.kt      detekce kontejneru a převod na PCM
-        StreamQuality.kt naměřený formát streamu pro ukazatel kvality
-        AudioEngine.kt   výstup na zvukovou kartu
-        PlayerController.kt  fronta, opakování, náhoda
-      platform/
-        AppIdentity.kt         AppUserModelID a zástupce v nabídce Start
-        WindowsMediaSession.kt SMTC – rychlá nastavení a mediální klávesy
-        SystemMediaSink.kt     rozhraní, prázdná implementace pro jiné OS
-    ui/                  Compose obrazovky
-      text/Strings.kt    všechny texty rozhraní (cs + en)
-      NowPlayingScreen.kt  velký přehrávač s taby Následuje / Text / Informace
-      TrackMenu.kt       kontextové menu skladby a ukládání do playlistu
-      Sort.kt            logika řazení a její uložení
-      SortSheet.kt       sheet Řazení a filtr
-  core/Lrclib.kt         záložní zdroj textů (lrclib.net)
-testdata/                vzorky pro selfCheck
-```
-
-### Licence
-
-Zdrojový kód Gladixu i tohoto portu je pod
-[Unabandon Public License](LICENSE.md) (GPLv3 rozšířená o povinnost zveřejnit zdrojový
-kód odvozených děl). Pokud aplikaci distribuujete, musíte zpřístupnit zdrojový kód.
-
-Postaveno na [Echo](https://github.com/brahmkshatriya/echo) od brahmkshatriya a na
-[Gladix](https://github.com/rschwertley/gladix) od rschwertley. Deezer je ochranná
-známka Deezer SA; tento projekt s ní není nijak spojen.
+**Stažení:** [Gladix-1.4.1-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — rozbalte a spusťte `Gladix\Gladix.exe`, JDK není potřeba.
 
 ---
 
@@ -356,10 +70,13 @@ Settings with the Windows integration toggle:
 | Sorting and filtering a track list (title, duration, artist, album, reversed) with an optional save | ✅ |
 | Radio from an album, artist, playlist or track | ✅ |
 | Playback — quality FLAC / 320 / 128 | ✅ falls back to the best available |
-| Player: play/pause, next/previous, seek, volume | ✅ |
+| Player: play/pause, next/previous, seek, volume | ✅ mouse wheel over the volume control works too |
 | Shuffle and repeat (off / all / one) | ✅ |
 | Playback queue with reordering, removal and a close button back to the previous screen | ✅ saved between launches |
 | Playback history (last 250 tracks) | ✅ |
+| Audio disk cache with a configurable size (off / 512 MB / 1 / 2 / 4 GB) and LRU eviction | ✅ |
+| Preloading of the next queued tracks so transitions do not stall | ✅ |
+| Playing a track from the library queues the whole tab in the order shown | ✅ |
 | Downloading tracks to disk (FLAC and MP3) | ✅ |
 | Downloading a whole album / playlist in one click | ✅ |
 | Playing downloaded files from disk | ✅ |
@@ -369,6 +86,8 @@ Settings with the Windows integration toggle:
 | Settings: quality, country, language, proxy, Deezer scrobbling | ✅ |
 | Media keys (play/pause, next, previous) | ✅ through Windows SMTC |
 | Playback in Windows quick settings (title, artist, artwork, seek) | ✅ |
+| Discord Rich Presence (track, artist, album, elapsed time) | ✅ needs a Discord Application ID |
+| Automatic update check with in-app download | ✅ |
 | Light/dark mode | ⚠️ dark only (the theme is prepared) |
 | Android Auto, Android TV, Chromecast | ❌ not portable |
 | Local files outside Deezer | ❌ out of scope |
@@ -589,3 +308,293 @@ available.
 Built on [Echo](https://github.com/brahmkshatriya/echo) by brahmkshatriya and on
 [Gladix](https://github.com/rschwertley/gladix) by rschwertley. Deezer is a trademark
 of Deezer SA; this project is not affiliated with it.
+
+---
+
+## Česky
+
+Gladix Desktop je nativní desktopová aplikace pro Windows, která přehrává hudbu z Deezeru.
+Nepoužívá prohlížeč ani webové rozhraní — je to klasická Win32 aplikace s vlastním oknem,
+která komunikuje přímo s Deezer API přes stejný kód, jaký používá Android verze.
+Rozhraní je česky i anglicky, jazyk se přepíná v nastavení.
+
+**Použité moduly z Gladixu (beze změny zdrojového kódu):**
+
+| Modul | Co dělá |
+|-------|---------|
+| `:common` | Modely (`Track`, `Album`, `Artist`, `Playlist`, `Shelf`…), `Feed`/`PagedData` stránkování, `Settings` rozhraní, `ClientException` |
+| `:deezer` | `DeezerExtension`, `DeezerApi`, login (ARL i e-mail/heslo), feedy, vyhledávání, streamy, texty písní, rádio, lajky, knihovna |
+
+Zbytek (UI, přehrávač, stahování, historie, fronta, nastavení) je nový desktopový kód.
+
+### Ukázky
+
+| Domů | Knihovna |
+|------|----------|
+| ![Domů](docs/screenshots/home.png) | ![Knihovna](docs/screenshots/library.png) |
+
+| Hledání | Album s přehráváním |
+|---------|---------------------|
+| ![Hledání](docs/screenshots/search.png) | ![Album](docs/screenshots/album-playing.png) |
+
+Widget přehrávání v rychlých nastaveních Windows:
+
+![Windows media card](docs/screenshots/windows-media-card.png)
+
+Nastavení s přepínačem Windows integrace:
+
+![Nastavení](docs/screenshots/settings.png)
+
+### Funkce
+
+| Funkce | Stav |
+|--------|------|
+| Přihlášení ARL cookie | ✅ |
+| Přihlášení e-mailem a heslem | ✅ |
+| Uložení přihlášení mezi spuštěními | ✅ |
+| Jazyk rozhraní: čeština a angličtina (přepínač v nastavení) | ✅ |
+| Domovská stránka (doporučené feedy s taby) | ✅ |
+| Vyhledávání skladeb, alb, interpretů, playlistů | ✅ |
+| Historie hledání | ✅ |
+| Knihovna (feedy) | ✅ |
+| Detail alba / interpreta / playlistu | ✅ |
+| Kontextové menu skladby (přehrát, další, fronta, knihovna, lajky, playlist, stahování, interpret, album, rádio, sdílení) | ✅ |
+| Ukládání skladby do playlistu (i vytvoření nového playlistu) | ✅ |
+| Ukazatel skutečné kvality přehrávaného streamu (např. `FLAC · 44.1 kHz · 2ch`) | ✅ měřeno dekodérem, ne nastavením |
+| Obrazovka Přehrává se: velký obal, ovládání, taby Následuje / Text písně / Informace | ✅ |
+| Řazení a filtr seznamu skladeb (název, délka, interpret, album, opačně) s volitelným uložením | ✅ včetně všech záložek knihovny |
+| Rádio z alba, interpreta, playlistu, skladby | ✅ |
+| Přehrávání — volba kvality FLAC / 320 / 128 | ✅ automatický pokles na dostupnou |
+| Přehrávač: play/pause, další/předchozí, seek, hlasitost | ✅ hlasitost i kolečkem myši nad posuvníkem |
+| Náhodné přehrávání a opakování (off / vše / jedna) | ✅ |
+| Fronta přehrávání s přesouváním, mazáním a zavřením zpět na předchozí obrazovku | ✅ uložená mezi spuštěními |
+| Přehrání skladby z knihovny zařadí do fronty celou záložku v zobrazeném pořadí | ✅ |
+| Historie přehrávání (posledních 250 skladeb) | ✅ |
+| Mezipaměť audia na disku s volitelnou velikostí (vypnuto / 512 MB / 1 / 2 / 4 GB) a LRU evikcí | ✅ |
+| Přednačítání následujících skladeb ve frontě, aby se přechody nezasekávaly | ✅ |
+| Stahování skladeb na disk (FLAC i MP3) | ✅ |
+| Stahování celého alba / playlistu jedním klikem | ✅ |
+| Přehrávání stažených souborů z disku | ✅ |
+| Texty písní (Deezer, s doplněním z lrclib.net) | ✅ |
+| Lajky, ukládání do knihovny, sledování interpretů | ✅ |
+| Sdílení odkazu (do schránky) | ✅ |
+| Nastavení: kvalita, země, jazyk, proxy, Deezer logging | ✅ |
+| Ovládání mediálními klávesami (přehrát/pauza, další, předchozí) | ✅ přes Windows SMTC |
+| Přehrávání v rychlých nastaveních Windows (název, interpret, obal, seek) | ✅ |
+| Discord Rich Presence (skladba, interpret, album, ubíhající čas) | ✅ vyžaduje Discord Application ID |
+| Automatická kontrola aktualizací se stažením přímo v aplikaci | ✅ |
+| Světlý/tmavý režim | ⚠️ jen tmavý (téma je připravené) |
+| Android Auto, Android TV, Chromecast | ❌ neportsovatelné |
+| Lokální soubory mimo Deezer | ❌ mimo rozsah |
+| Plugin systém pro jiné rozšíření | ❌ Deezer je zabudovaný |
+
+### Ikona
+
+Ikona se negeneruje ručně v grafickém editoru, ale kódem — `desktop/icons/IconGenerator.java`
+(AWT, bez závislostí) kreslí fialovou dlaždici s notou a zapisuje:
+
+| Soubor | K čemu |
+|--------|--------|
+| `desktop/icons/icon.ico` | vícesize ikona (16–256 px) pro `Gladix.exe`, MSI/EXE instalátor i zástupce |
+| `desktop/icons/icon-256.png`, `icon-512.png` | PNG pro README, store a dokumentaci |
+| `desktop/icons/icon-preview.png` | kontrola čitelnosti v malých velikostech |
+| `desktop/src/main/resources/icon.png` | ikona okna a taskbaru (zabalená v jaru) |
+
+Přegenerování po změně kresby:
+
+```bat
+java desktop\icons\IconGenerator.java
+```
+
+### Ověřeno
+
+- `gradlew.bat :desktop:selfCheck` — všechny kontroly procházejí (serializace, nastavení,
+  žebříček kvalit, dekódování MP3 i FLAC z `testdata/`, řazení seznamů, popisek měřené
+  kvality streamu).
+- `gradlew.bat :desktop:uiSmoke` — projde všech 9 obrazovek, sheet řazení, kontextové
+  menu skladby i dialog ukládání do playlistu v reálném okně a skončí s kódem 0.
+- Sestavení a spuštění z `Gladix.exe` bez chyb a bez varování v logu.
+- Přihlášení reálným Deezer účtem, načtení domovského feedu (recently played, mixy,
+  playlisty, Flow, doporučení), knihovny a detailu alba.
+- Přehrávání reálného streamu: pozice se posouvá v reálném čase (0:05 → 0:13),
+  ovládání play/pause reaguje v přehrávacím pruhu i v hlavičce.
+- Windows integrace: přehrávání se objeví v rychlých nastaveních (Win+A) s názvem
+  skladby, interpretem, obalem alba a tlačítky ⏮ ▶/⏸ ⏭; mediální klávesy na
+  klávesnici skutečně přepínají přehrávání (ověřeno vložením VK_MEDIA_PLAY_PAUSE,
+  VK_MEDIA_NEXT_TRACK a VK_MEDIA_PREV_TRACK — stav se v shellu změnil na Playing
+  a pozice se rozjela).
+
+Co ověřeno **není**: stažení celého alba, texty písní a rádio byly napsány proti
+stejnému API jako zbytek, ale neprošly ruční zkouškou s živým účtem.
+
+### Požadavky
+
+- Windows 10/11 (x64)
+- JDK 17 nebo novější pro sestavení (testováno na JDK 24; aplikace samotná si nese vlastní runtime)
+
+### Sestavení a spuštění
+
+```bat
+gradlew.bat :desktop:run
+```
+
+### Testy
+
+```bat
+gradlew.bat :desktop:selfCheck
+```
+
+`selfCheck` je headless sada kontrol, které nepotřebují Deezer účet: serializace
+ukládaných modelů, nastavení, žebříček kvalit, dekódování reálného MP3 a FLAC souboru
+(`testdata/`), převod na PCM pro zvukovou kartu, řazení seznamů a popisek měřené
+kvality streamu.
+
+```bat
+gradlew.bat :desktop:uiSmoke
+```
+
+`uiSmoke` otevře reálné okno a projde postupně všechny obrazovky (Domů, Hledání,
+Knihovna, Stažené, Historie, Fronta, Nastavení, Přehrává se, detail alba) a navíc
+sheet řazení, kontextové menu skladby a dialog ukládání do playlistu. Když některý
+composable spadne, skončí nenulovým kódem - to odhalí chyby, které `selfCheck`
+nevidí (ikona, scope `weight`, chybějící řetězec). Účet nepotřebuje.
+
+### Sestavení Windows aplikace
+
+```bat
+gradlew.bat :desktop:createDistributable
+```
+
+Výsledek: `desktop\build\compose\binaries\main\app\Gladix\Gladix.exe` — samostatná
+složka s vlastním JVM runtime, běží bez instalace JDK. Pro distribuci zabalte tuto
+složku do ZIPu (to dělá `release\Gladix-1.1.3-windows-x64.zip`).
+
+Při prvním spuštění si aplikace vytvoří zástupce
+`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Gladix.lnk`. Není to nepořádek —
+bez něj Windows nezobrazí v rychlých nastaveních jméno „Gladix“ ani ikonu
+(viz část Jak to funguje).
+
+Instalační MSI/EXE (`packageMsi`, `packageExe`) vyžaduje
+[WiX Toolset 3](https://github.com/wixtoolset/wix3/releases) v `PATH` a oprávnění
+administrátora při instalaci WiX:
+
+```bat
+gradlew.bat :desktop:packageMsi
+```
+
+### Kde jsou data
+
+`%APPDATA%\Gladix\`
+
+```
+settings.properties   nastavení
+user.json             přihlašovací údaje (ARL / e-mail, heslo)
+queue.json            fronta přehrávání
+history.json          historie přehrávání
+downloads.json        seznam stažených skladeb
+downloads\            stažené soubory .flac / .mp3
+```
+
+Smazáním složky se aplikace vrátí do stavu po instalaci.
+
+### Jak to funguje
+
+**Přihlášení.** `DeezerExtension.onLogin()` vrací `User`, jehož `extras` obsahují
+`arl`, `sid`, `token`, `license_token`, `user_id`, `email` a `pass`. Celý objekt se
+uloží jako JSON a při startu se předá zpět do `setLoginUser()`, takže se relace obnoví
+bez opakovaného zadávání údajů.
+
+**Přehrávání.** Extension vrací `Streamable.Source.Raw`, jehož `InputProvider.provide()`
+dává už **dešifrovaný** proud bytů (Deezer posílá data zašifrovaná Blowfishem, `:deezer`
+modul to řeší sám). Desktop tedy nepotřebuje lokální HTTP proxy — čte proud přímo a
+krmí jím zvukový dekodér.
+
+**Dekódování.** MP3 a FLAC přes javax.sound s providery `mp3spi` a `jflac-codec`.
+Důležité: `AudioSystem.getAudioInputStream(InputStream)` se **nepoužívá** pro detekci
+formátu, protože FLAC reader je zkoušen první a na MP3 souboru vyhodí `IOException`
+místo `UnsupportedAudioFileException` — tím by selhalo každé MP3. Místo toho se podle
+hlavičky souboru (`fLaC`, `RIFF`, `ID3`, MPEG sync) vybere konkrétní reader přímo
+(`core/player/Decoders.kt`).
+
+**Seek.** Stream se otevře znovu od začátku a dekódované vzorky se zahazují až do
+požadované pozice. Je to pomalejší než byte-range seek, ale jediné správné řešení pro
+FLAC (který nemá obnovovací body uprostřed souboru) a pro MP3 bez znalosti bitrate.
+
+**Stahování.** Stahuje se stejný dešifrovaný proud jako při přehrávání, do souboru
+`<id>.part`, a po dokončení se podle hlavičky přejmenuje na `.flac` / `.mp3` / `.wav`.
+
+**Ukazatel kvality.** Nastavení kvality je jen přání: Deezer u skladby, která ve FLAC
+nevyšla, vrátí MP3, a `DeezerClient` proto zkouší 9 → 6 → 3 → 0, dokud něco nepřijde.
+Pill v přehrávači ukazuje, co **skutečně** přišlo — `Decoders.open()` vrátí kromě PCM
+proudu i rozpoznaný kontejner a formát, `PlayerController.streamQuality` to vystaví a
+`StreamQuality.label` z toho složí text jako `FLAC · 44.1 kHz · 2ch`. Před přepnutím
+skladby se hodnota vynuluje, aby na obrazovce nikdy nezůstala kvalita té předchozí.
+
+**Windows a mediální klávesy.** Přehrávač publikuje stav do System Media Transport
+Controls (SMTC) přes knihovnu `JavaMediaTransportControls`; z toho žije widget v
+rychlých nastaveních i směrování hardwarových mediálních kláves — vlastní hook na
+klávesnici není potřeba a ani se nepoužívá (jinak by klávesa přišla dvakrát).
+Dvě věci jsou háklivé:
+
+1. `SetCurrentProcessExplicitAppUserModelID` je **wide** API. Když se mu předá
+   obyčejný `String`, JNA ho zkonvertuje na ANSI bajty a shell je přečte jako UTF-16,
+   takže id vznikne jako nesmysl. Proto se předává `WString`.
+2. Id se ve shellu přeloží na jméno a ikonu jen tehdy, když ho nese **zástupce
+   v nabídce Start** jako vlastnost `System.AppUserModel.ID`. Zápis do registru
+   `HKCU\Software\Classes\AppUserModelId` na widget v rychlých nastaveních nestačí.
+   Proto aplikace při prvním spuštění sama vytvoří `Gladix.lnk` (přes `IShellLink`,
+   `IPropertyStore` a `IPersistFile` z JNA) — portable build totiž žádný instalátor,
+   který by to udělal, nemá.
+
+Obal alba se do SMTC nedá předat přímo: obal knihovny předává nativní části `file:`
+URI, kterou `StorageFile::GetFileFromPathAsync` neotevře, a navíc na výsledek čeká bez
+časového limitu. Proto se obal stáhne do `%APPDATA%\Gladix\images` a do nativní vrstvy
+se předá přes reflextí získaný adaptér se skutečnou cestou a s timeoutem.
+
+### Struktura
+
+```
+common/    převzato z Gladixu, beze změny
+deezer/    převzato z Gladixu, beze změny
+desktop/
+  icons/
+    IconGenerator.java   generátor ikony (ICO + PNG), viz část Ikona
+  src/main/kotlin/dev/gladix/desktop/
+    Main.kt              vstupní bod, okno
+    SelfCheck.kt         headless testy
+    UiSmoke.kt           projde všechny obrazovky v reálném okně
+    AppContext.kt        sdílené závislosti
+    core/
+      Prefs.kt           cesty, nastavení, JSON
+      Images.kt          načítání a cache obrázků
+      DeezerClient.kt    obal nad DeezerExtension
+      Downloads.kt       stahování na disk
+      History.kt         historie přehrávání
+      player/
+        Decoders.kt      detekce kontejneru a převod na PCM
+        StreamQuality.kt naměřený formát streamu pro ukazatel kvality
+        AudioEngine.kt   výstup na zvukovou kartu
+        PlayerController.kt  fronta, opakování, náhoda
+      platform/
+        AppIdentity.kt         AppUserModelID a zástupce v nabídce Start
+        WindowsMediaSession.kt SMTC – rychlá nastavení a mediální klávesy
+        SystemMediaSink.kt     rozhraní, prázdná implementace pro jiné OS
+    ui/                  Compose obrazovky
+      text/Strings.kt    všechny texty rozhraní (cs + en)
+      NowPlayingScreen.kt  velký přehrávač s taby Následuje / Text / Informace
+      TrackMenu.kt       kontextové menu skladby a ukládání do playlistu
+      Sort.kt            logika řazení a její uložení
+      SortSheet.kt       sheet Řazení a filtr
+  core/Lrclib.kt         záložní zdroj textů (lrclib.net)
+testdata/                vzorky pro selfCheck
+```
+
+### Licence
+
+Zdrojový kód Gladixu i tohoto portu je pod
+[Unabandon Public License](LICENSE.md) (GPLv3 rozšířená o povinnost zveřejnit zdrojový
+kód odvozených děl). Pokud aplikaci distribuujete, musíte zpřístupnit zdrojový kód.
+
+Postaveno na [Echo](https://github.com/brahmkshatriya/echo) od brahmkshatriya a na
+[Gladix](https://github.com/rschwertley/gladix) od rschwertley. Deezer je ochranná
+známka Deezer SA; tento projekt s ní není nijak spojen.
