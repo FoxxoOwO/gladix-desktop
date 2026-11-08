@@ -67,6 +67,22 @@ sealed interface Page {
     data object NowPlaying : Page
     data class Item(val item: EchoMediaItem) : Page
     data class Category(val category: Shelf.Category) : Page
+
+    /** The "show all" page behind a horizontal shelf. */
+    data class All(val all: AllItems) : Page
+}
+
+/**
+ * A shelf that can keep loading more items, opened as its own full page.
+ *
+ * Only shelves carrying a [Shelf.Lists.more] feed land here: a fixed strip of
+ * a dozen albums has nothing more to show, so it gets no button.
+ */
+sealed interface AllItems {
+    val title: String
+
+    data class Albums(override val title: String, val feed: dev.brahmkshatriya.echo.common.models.Feed<Shelf>) :
+        AllItems
 }
 
 class AppState(val ctx: AppContext) {
@@ -100,6 +116,8 @@ class AppState(val ctx: AppContext) {
     fun open(item: EchoMediaItem) = navigate(Page.Item(item))
 
     fun openCategory(category: Shelf.Category) = navigate(Page.Category(category))
+
+    fun openAll(all: AllItems) = navigate(Page.All(all))
 
     fun showToast(message: String) {
         toast = message

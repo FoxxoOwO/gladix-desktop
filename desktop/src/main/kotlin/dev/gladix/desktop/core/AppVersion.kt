@@ -5,7 +5,7 @@ package dev.gladix.desktop.core
  * update check and the Discord presence all agree.
  */
 object AppVersion {
-    const val NAME = "1.4.2"
+    const val NAME = "1.4.3"
 
     /** `owner/repo` of the GitHub project the update check asks for releases. */
     const val REPO = "FoxxoOwO/gladix-desktop"

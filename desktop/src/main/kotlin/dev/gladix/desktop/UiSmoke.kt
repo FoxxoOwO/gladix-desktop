@@ -25,6 +25,7 @@ import dev.brahmkshatriya.echo.common.models.Artist
 import dev.brahmkshatriya.echo.common.models.Playlist
 import dev.brahmkshatriya.echo.common.models.Shelf
 import dev.brahmkshatriya.echo.common.models.Track
+import dev.gladix.desktop.ui.AllItems
 import dev.gladix.desktop.ui.App
 import dev.gladix.desktop.ui.AppState
 import dev.gladix.desktop.ui.Page
@@ -95,7 +96,11 @@ fun main() {
         "queue" to Page.Queue,
         "settings" to Page.Settings,
         "now playing" to Page.NowPlaying,
-        "album" to Page.Item(smokeTracks.first().album!!)
+        "album" to Page.Item(smokeTracks.first().album!!),
+        // The "show all" page: a paged grid, exercised with one page of items.
+        "all albums" to Page.All(
+            AllItems.Albums("Albums", smokeAlbumFeed())
+        )
     )
 
     var phase by mutableStateOf(0)
@@ -179,6 +184,27 @@ fun main() {
                 }
             }
         }
+    }
+}
+
+/**
+ * A shelf feed with a single page, so the "show all" grid renders without
+ * touching the network and without paging forever.
+ */
+internal fun smokeAlbumFeed(): dev.brahmkshatriya.echo.common.models.Feed<Shelf> {
+    val albums = (1..8).map { index ->
+        Shelf.Item(
+            Album(
+                id = "smoke-all-$index",
+                title = "Album $index",
+                artists = listOf(Artist(id = "smoke-artist", name = "AmaG"))
+            )
+        )
+    }
+    val data: dev.brahmkshatriya.echo.common.helpers.PagedData<Shelf> =
+        dev.brahmkshatriya.echo.common.helpers.PagedData.Single { albums }
+    return dev.brahmkshatriya.echo.common.models.Feed(listOf()) {
+        dev.brahmkshatriya.echo.common.models.Feed.Data(data)
     }
 }
 

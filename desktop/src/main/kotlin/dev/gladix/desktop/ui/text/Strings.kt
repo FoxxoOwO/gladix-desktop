@@ -133,6 +133,7 @@ interface Strings {
     val downloadedTracks: String
     val nothingDownloaded: String
     val nothingPlayed: String
+    val nothingToShow: String
     val clearQueue: String
     val queueEmpty: String
     val nothingPlaying: String
@@ -338,6 +339,7 @@ private object CsStrings : Strings {
     override val downloadedTracks = "Stažené skladby"
     override val nothingDownloaded = "Zatím nic staženého. Stahuj tlačítkem u skladby nebo alba."
     override val nothingPlayed = "Zatím jsi nic nepřehrál."
+    override val nothingToShow = "Nic k zobrazení."
     override val clearQueue = "Vyprázdnit frontu"
     override val queueEmpty = "Fronta je prázdná."
     override val nothingPlaying = "Nic se nepřehrává."
@@ -547,6 +549,7 @@ private object EnStrings : Strings {
     override val downloadedTracks = "Downloaded tracks"
     override val nothingDownloaded = "Nothing downloaded yet. Use the button next to a track or album."
     override val nothingPlayed = "You have not played anything yet."
+    override val nothingToShow = "Nothing to show."
     override val clearQueue = "Clear queue"
     override val queueEmpty = "The queue is empty."
     override val nothingPlaying = "Nothing is playing."
