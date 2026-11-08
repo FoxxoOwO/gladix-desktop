@@ -19,6 +19,19 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
+//
+// The packaged image has to be built from the SAME Java version the classes
+// target. Without this the runtime is taken from whatever `java` happens to be
+// first on PATH (a JDK 17 here), and the shipped Gladix.exe dies on startup with
+// `UnsupportedClassVersionError: class file version 65.0`.
+//
+// Pinning a toolchain also means a missing JDK 21 is downloaded automatically
+// instead of silently picking an older one.
+//
+kotlin {
+    jvmToolchain(21)
+}
+
 dependencies {
     implementation(project(":deezer"))
     implementation(compose.desktop.currentOs)
@@ -40,12 +53,26 @@ compose.desktop {
     application {
         mainClass = "dev.gladix.desktop.MainKt"
 
+        //
+        // The packaged runtime image is produced by jlink using this JDK.
+        // Left unset it defaults to the JVM running the Gradle daemon, which on
+        // this machine is a JDK 17 — producing a runtime that cannot load the
+        // JVM 21 classes and a Gladix.exe that dies with
+        // `UnsupportedClassVersionError: class file version 65.0`.
+        //
+        // Pinning it to the same toolchain the code is compiled with keeps the
+        // two in lockstep whatever `java` is first on PATH.
+        //
+        javaHome = javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(21))
+        }.get().metadata.installationPath.asFile.absolutePath
+
         jvmArgs += listOf("-Xmx1g", "--enable-native-access=ALL-UNNAMED")
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "Gladix"
-            packageVersion = "1.4.1"
+            packageVersion = "1.4.2"
             description = "Gladix for Windows - Deezer music player"
             vendor = "Gladix Desktop"
 
