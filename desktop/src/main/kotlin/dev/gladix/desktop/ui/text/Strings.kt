@@ -197,6 +197,9 @@ interface Strings {
     val discordPresenceNote: String
     val discordClientId: String
     val discordClientIdNote: String
+    val discordConnected: String
+    val discordWaiting: String
+    val discordError: String
 
     // Updates
     val sectionUpdates: String
@@ -403,6 +406,9 @@ private object CsStrings : Strings {
     override val discordClientId = "Discord Application ID"
     override val discordClientIdNote = "ID aplikace z Discord Developer Portal. Bez něj se " +
         "Rich Presence nezobrazí."
+    override val discordConnected = "Připojeno k Discordu"
+    override val discordWaiting = "Čekám na Discord…"
+    override val discordError = "Discord odmítl připojení"
 
     override val sectionUpdates = "Aktualizace"
     override val autoUpdateCheck = "Automaticky kontrolovat aktualizace"
@@ -608,6 +614,9 @@ private object EnStrings : Strings {
     override val discordClientId = "Discord Application ID"
     override val discordClientIdNote = "The application id from the Discord Developer " +
         "Portal. Without it Rich Presence is not shown."
+    override val discordConnected = "Connected to Discord"
+    override val discordWaiting = "Waiting for Discord…"
+    override val discordError = "Discord rejected the connection"
 
     override val sectionUpdates = "Updates"
     override val autoUpdateCheck = "Check for updates automatically"

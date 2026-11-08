@@ -290,14 +290,14 @@ fun SettingsScreen(state: AppState) {
 
         val discord = state.ctx.discord
         var discordEnabled by remember {
-            mutableStateOf(settings.getBoolean(PrefsSettings.KEY_DISCORD_PRESENCE) ?: false)
+            mutableStateOf(settings.getBoolean(PrefsSettings.KEY_DISCORD_PRESENCE) ?: true)
         }
         var discordClientId by remember {
             mutableStateOf(
-                settings.getStringOrDefault(
-                    PrefsSettings.KEY_DISCORD_CLIENT_ID,
-                    PrefsSettings.DEFAULT_DISCORD_CLIENT_ID
-                )
+                settings.getString(PrefsSettings.KEY_DISCORD_CLIENT_ID)
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() && it != "0" }
+                    ?: PrefsSettings.DEFAULT_DISCORD_CLIENT_ID
             )
         }
         SettingsSection(strings.sectionDiscord) {
@@ -344,6 +344,23 @@ fun SettingsScreen(state: AppState) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 6.dp)
             )
+            if (discordEnabled) {
+                val connected = discord.isConnected
+                Text(
+                    text = if (connected) strings.discordConnected else strings.discordWaiting,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (connected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                discord.lastError?.let { message ->
+                    Text(
+                        text = "${strings.discordError}: $message",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
 
         HorizontalDivider()

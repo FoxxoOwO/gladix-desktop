@@ -9,15 +9,19 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Discord Rich Presence over the local Discord IPC socket.
@@ -25,11 +29,15 @@ import java.nio.ByteOrder
  * Discord does not accept this over HTTP: the desktop client creates a named
  * pipe (`\\.\pipe\discord-ipc-N` on Windows, a unix socket elsewhere) and every
  * message is a binary frame — a 32 bit little endian opcode, a 32 bit little
- * endian length, then that many bytes of UTF-8 JSON.
+ * endian length, then that many bytes of UTF-8 JSON. The pipe is full duplex:
+ * the handshake answer and every error arrive as frames in the other direction,
+ * so a reader thread drains them (an undrained pipe eventually blocks writes).
  *
  * Opcodes used here:
  *  - `0` handshake, sent once with our application id;
- *  - `1` frame, carrying `SET_ACTIVITY`.
+ *  - `1` frame, carrying `SET_ACTIVITY`;
+ *  - `3` close, which Discord sends when it rejects us (wrong id, etc.);
+ *  - `4` ping / `5` pong.
  *
  * Everything is best effort. Discord being closed, the pipe already taken, or a
  * rate limit are normal states and never surface in the player — the presence
@@ -69,8 +77,15 @@ class DiscordPresence(
 
     private var lastPushAt = 0L
 
+    /** True while a handshake completed and the pipe is still open. */
     @Volatile
-    private var connected = false
+    var isConnected: Boolean = false
+        private set
+
+    /** Last protocol error Discord reported, for the settings screen. */
+    @Volatile
+    var lastError: String? = null
+        private set
 
     // ------------------------------------------------------------ lifecycle
 
@@ -104,11 +119,8 @@ class DiscordPresence(
         job = null
         activity = null
         pushedSignature = null
-        connected = false
+        isConnected = false
     }
-
-    /** True once the handshake went through, for the settings screen. */
-    val isConnected: Boolean get() = connected
 
     // ------------------------------------------------------- SystemMediaSink
 
@@ -156,23 +168,33 @@ class DiscordPresence(
 
     /**
      * Connects to the first free Discord pipe and pushes activity changes until
-     * the connection drops. Returns true when it stayed connected for a while.
+     * the connection drops. Returns true when it stayed connected for a while,
+     * which the caller uses to decide whether to back off.
      */
-    private suspend fun serve(): Boolean {
+    private fun serve(): Boolean {
         val id = clientId().trim()
         if (id.isEmpty() || id == "0") return false
 
         val channel = openPipe() ?: return false
         val startedAt = System.currentTimeMillis()
+        val alive = AtomicBoolean(true)
+        lastError = null
+
         try {
             write(channel, 0, buildJsonObject {
                 put("v", 1)
                 put("client_id", id)
             }.toString())
-            connected = true
             pushedSignature = null
 
-            while (enabled) {
+            // Drains whatever Discord sends. Without it the pipe buffer fills up
+            // after enough SET_ACTIVITY responses and writes start blocking.
+            val reader = Thread({
+                runCatching { readLoop(channel, alive) }
+                alive.set(false)
+            }, "gladix-discord-read").apply { isDaemon = true }
+            reader.start()
+            while (enabled && alive.get()) {
                 val current = activity
                 if (current == null) {
                     if (pushedSignature != null) {
@@ -188,15 +210,66 @@ class DiscordPresence(
                         lastPushAt = now
                     }
                 }
-                delay(2_000)
+                Thread.sleep(2_000)
             }
+            alive.set(false)
             return System.currentTimeMillis() - startedAt > 10_000
         } catch (t: Throwable) {
             // A broken pipe is the normal "Discord closed" signal.
             return false
         } finally {
-            connected = false
+            alive.set(false)
+            isConnected = false
+            currentChannel = null
             runCatching { channel.close() }
+        }
+    }
+
+    /** Reads frames from Discord until the pipe closes. */
+    private fun readLoop(channel: RandomAccessFile, alive: AtomicBoolean) {
+        val header = ByteArray(8)
+        while (enabled && alive.get()) {
+            if (!readFully(channel, header)) return
+            val buffer = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
+            val opcode = buffer.int
+            val length = buffer.int
+            if (length < 0 || length > (1 shl 20)) return
+            val payload = ByteArray(length)
+            if (!readFully(channel, payload)) return
+            handleFrame(channel, opcode, String(payload, Charsets.UTF_8))
+        }
+    }
+
+    private fun readFully(channel: RandomAccessFile, target: ByteArray): Boolean {
+        var offset = 0
+        while (offset < target.size) {
+            val read = channel.read(target, offset, target.size - offset)
+            if (read < 0) return false
+            offset += read
+        }
+        return true
+    }
+
+    private fun handleFrame(channel: RandomAccessFile, opcode: Int, payload: String) {
+        when (opcode) {
+            // READY: the handshake was accepted.
+            1 -> {
+                val json = parse(payload) ?: return
+                if (json.string("cmd") == "DISPATCH" && json.string("evt") == "READY") {
+                    isConnected = true
+                }
+            }
+            // Discord closes the connection and explains why.
+            3 -> {
+                lastError = parse(payload)?.string("message") ?: payload.take(200)
+                isConnected = false
+            }
+            // Server ping; answer so Discord keeps the session alive.
+            4 -> runCatching {
+                write(channel, 1, buildJsonObject { put("cmd", "PING") }.toString())
+            }
+
+            else -> Unit
         }
     }
 
@@ -254,16 +327,30 @@ class DiscordPresence(
             .putInt(bytes.size)
             .array()
         // One write keeps header and body adjacent from Discord's point of view.
-        channel.write(header + bytes)
+        synchronized(channel) { channel.write(header + bytes) }
     }
+
+    /** Ping replies come from the reader thread, which has no channel handle. */
+    @Volatile
+    private var currentChannel: RandomAccessFile? = null
+
+    private fun parse(payload: String): JsonObject? =
+        runCatching { Json.parseToJsonElement(payload) as? JsonObject }.getOrNull()
+
+    private fun JsonObject.string(key: String): String? =
+        runCatching { this[key]?.jsonPrimitive?.contentOrNull }.getOrNull()
 
     /** The pipe Discord listens on: `discord-ipc-0` … `discord-ipc-9`. */
     private fun openPipe(): RandomAccessFile? {
         for (index in 0..9) {
             val path = pipePath(index) ?: continue
             val handle = runCatching { RandomAccessFile(path, "rw") }.getOrNull()
-            if (handle != null) return handle
+            if (handle != null) {
+                currentChannel = handle
+                return handle
+            }
         }
+        currentChannel = null
         return null
     }
 

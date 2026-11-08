@@ -52,10 +52,12 @@ class AppContext {
     val discord = DiscordPresence(
         scope = scope,
         clientId = {
-            settings.getStringOrDefault(
-                PrefsSettings.KEY_DISCORD_CLIENT_ID,
-                PrefsSettings.DEFAULT_DISCORD_CLIENT_ID
-            )
+            // A cleared field falls back to the bundled Gladix application id,
+            // so emptying the text box never silently kills the presence.
+            settings.getString(PrefsSettings.KEY_DISCORD_CLIENT_ID)
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() && it != "0" }
+                ?: PrefsSettings.DEFAULT_DISCORD_CLIENT_ID
         }
     )
 
@@ -68,7 +70,7 @@ class AppContext {
         // reference for the initial publish.
         player.systemMedia = FanoutMediaSink(listOf(mediaSession, discord))
         mediaSession.start()
-        discord.setEnabled(settings.getBoolean(PrefsSettings.KEY_DISCORD_PRESENCE) ?: false)
+        discord.setEnabled(settings.getBoolean(PrefsSettings.KEY_DISCORD_PRESENCE) ?: true)
         cache.evictIfNeeded()
         updates.startPeriodicCheck()
     }

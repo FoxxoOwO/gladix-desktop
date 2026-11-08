@@ -106,7 +106,12 @@ class PrefsSettings(val file: File = AppPaths.settingsFile) : Settings {
 
         /** Discord application id used for the Rich Presence activity. */
         const val KEY_DISCORD_CLIENT_ID = "desktop_discord_client_id"
-        const val DEFAULT_DISCORD_CLIENT_ID = "0"
+
+        /**
+         * The Gladix Discord application. Shipped as the default so Rich
+         * Presence works out of the box; the Settings field still overrides it.
+         */
+        const val DEFAULT_DISCORD_CLIENT_ID = "1568916440348627056"
 
         /** Automatic update check against GitHub Releases. */
         const val KEY_UPDATE_CHECK = "desktop_update_check"
