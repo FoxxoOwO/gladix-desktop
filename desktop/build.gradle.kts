@@ -45,7 +45,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "Gladix"
-            packageVersion = "1.3.0"
+            packageVersion = "1.4.0"
             description = "Gladix for Windows - Deezer music player"
             vendor = "Gladix Desktop"
 
@@ -78,6 +78,11 @@ tasks.register<JavaExec>("selfCheck") {
     description = "Runs the headless self-check."
     mainClass.set("dev.gladix.desktop.SelfCheckKt")
     classpath = sourceSets["main"].runtimeClasspath
+    // The app targets JVM 21, so the runner must not fall back to whatever
+    // java.exe happens to be first on PATH (that used to be a JDK 17 here).
+    javaLauncher.set(
+        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) }
+    )
 }
 
 // Opens every screen in a real window and exits non-zero if one of them throws.
@@ -88,6 +93,9 @@ tasks.register<JavaExec>("uiSmoke") {
     classpath = sourceSets["main"].runtimeClasspath
     jvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
     standardOutput = System.out
+    javaLauncher.set(
+        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) }
+    )
 }
 
 // Publishes a fake media session so the Windows shell integration can be probed
@@ -100,4 +108,7 @@ tasks.register<JavaExec>("mediaProbe") {
     args("media-probe")
     jvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
     standardOutput = System.out
+    javaLauncher.set(
+        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) }
+    )
 }
