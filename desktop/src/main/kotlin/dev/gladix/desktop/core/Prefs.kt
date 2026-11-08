@@ -101,6 +101,16 @@ class PrefsSettings(val file: File = AppPaths.settingsFile) : Settings {
         const val KEY_MEDIA_SESSION = "desktop_media_session"
         const val KEY_MEDIA_KEYS = "desktop_media_keys"
 
+        /** Discord Rich Presence (`1` = on). */
+        const val KEY_DISCORD_PRESENCE = "desktop_discord_presence"
+
+        /** Discord application id used for the Rich Presence activity. */
+        const val KEY_DISCORD_CLIENT_ID = "desktop_discord_client_id"
+        const val DEFAULT_DISCORD_CLIENT_ID = "0"
+
+        /** Automatic update check against GitHub Releases. */
+        const val KEY_UPDATE_CHECK = "desktop_update_check"
+
         /** Music audio cache size in Megabytes (MB). 0 means disabled. */
         const val KEY_CACHE_SIZE_MB = "desktop_cache_size_mb"
         const val DEFAULT_CACHE_SIZE_MB = 1024

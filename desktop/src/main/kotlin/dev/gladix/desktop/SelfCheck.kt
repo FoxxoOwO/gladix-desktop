@@ -310,9 +310,13 @@ fun main(args: Array<String>) {
         prefs.putInt(PrefsSettings.KEY_CACHE_SIZE_MB, 1) // 1 MB limit
         val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
         val client = DeezerClient(prefs)
-        val cache = dev.gladix.desktop.core.AudioCacheManager(client, prefs, scope)
+        // A throwaway folder: the test must never touch the user's real cache.
+        val testDir = java.io.File(AppPaths.root, "selfcheck-cache").apply {
+            deleteRecursively()
+            mkdirs()
+        }
+        val cache = dev.gladix.desktop.core.AudioCacheManager(client, prefs, scope, testDir)
 
-        // Clear cache initially
         cache.clear()
         if (cache.currentSizeBytes() != 0L) error("cache not cleared")
 
@@ -333,7 +337,23 @@ fun main(args: Array<String>) {
         if (!f2.exists() || !f3.exists()) error("track2 and track3 should remain")
 
         cache.clear()
+        testDir.deleteRecursively()
         prefsFile.delete()
+    }
+
+    // ------------------------------------------------------------- updates
+
+    check("version comparison orders dotted releases") {
+        fun cmp(a: String, b: String) = dev.gladix.desktop.core.compareVersions(a, b)
+
+        if (cmp("1.3.0", "1.3.0") != 0) error("identical versions differ")
+        if (cmp("1.4.0", "1.3.0") <= 0) error("1.4.0 should be newer than 1.3.0")
+        if (cmp("1.3.0", "1.4.0") >= 0) error("1.3.0 should be older than 1.4.0")
+        // 1.10 is newer than 1.9, which a string compare gets wrong.
+        if (cmp("1.10.0", "1.9.0") <= 0) error("1.10.0 should be newer than 1.9.0")
+        if (cmp("v1.3.0", "1.3.0") != 0) error("leading v should be ignored")
+        if (cmp("1.3", "1.3.0") != 0) error("missing patch should count as zero")
+        if (cmp("2.0.0", "1.99.99") <= 0) error("major bump wins")
     }
 
     // ----------------------------------------------------------------- audio

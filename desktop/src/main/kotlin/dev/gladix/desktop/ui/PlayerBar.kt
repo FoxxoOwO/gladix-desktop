@@ -1,5 +1,6 @@
 package dev.gladix.desktop.ui
 
+import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +39,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -228,11 +232,41 @@ private fun SeekBar(player: PlayerController) {
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun VolumeControl(player: PlayerController) {
     var muted by remember { mutableStateOf(false) }
     var before by remember { mutableStateOf(0.85f) }
-    Row(verticalAlignment = Alignment.CenterVertically) {
+
+    // The wheel is the quickest way to nudge the volume, so a hover over the
+    // whole control (icon + slider) listens for it, not just the thin slider.
+    val onScroll: (Float) -> Unit = { delta ->
+        muted = false
+        player.changeVolume(player.volume + delta * VOLUME_STEP)
+    }
+
+    // A plain hover tooltip; a slider is not focusable enough for TooltipBox
+    // to anchor a proper popup, so this is the lightweight variant.
+    TooltipArea(
+        tooltip = {
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                tonalElevation = 6.dp
+            ) {
+                Text(
+                    text = UiStrings.s.volumeScrollHint,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        },
+        delayMillis = 700
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.onPointerScroll(onScroll)
+        ) {
         IconButton(onClick = {
             muted = !muted
             if (muted) {
@@ -256,6 +290,39 @@ private fun VolumeControl(player: PlayerController) {
                     player.changeVolume(it)
                 }
             )
+        }
+        }
+    }
+}
+
+/** One wheel notch (or one step of a smooth trackpad scroll). */
+private const val VOLUME_STEP = 0.02f
+
+/**
+ * Mouse-wheel volume, without losing the widget it is attached to.
+ *
+ * Compose Desktop reports a wheel move as a pointer event whose [PointerEventType]
+ * is [PointerEventType.Scroll]; the vertical scroll distance arrives in
+ * [PointerInputChange.scrollDelta]. Because a normal `onPointerEvent` handler
+ * would swallow the event for the slider below, the handler consumes nothing and
+ * only reacts to non-zero scroll deltas.
+ */
+private fun Modifier.onPointerScroll(onScroll: (Float) -> Unit): Modifier = composed {
+    pointerInput(Unit) {
+        awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent()
+                if (event.type == PointerEventType.Scroll) {
+                    var delta = 0f
+                    event.changes.forEach { change ->
+                        delta += change.scrollDelta.y
+                    }
+                    if (delta != 0f) {
+                        // Scrolling up (negative in Compose) raises the volume.
+                        onScroll(-delta)
+                    }
+                }
+            }
         }
     }
 }

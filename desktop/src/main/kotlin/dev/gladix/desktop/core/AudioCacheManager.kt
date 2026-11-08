@@ -15,9 +15,11 @@ import java.util.concurrent.ConcurrentHashMap
 class AudioCacheManager(
     private val client: DeezerClient,
     private val settings: PrefsSettings,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    /** Where the cached audio lives; overridable so tests stay off the real cache. */
+    cacheDirectory: File = AppPaths.cache
 ) {
-    private val dir = AppPaths.cache
+    private val dir = cacheDirectory.apply { mkdirs() }
 
     /** In-memory track of cached files: trackId -> File */
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
@@ -42,6 +44,10 @@ class AudioCacheManager(
             runCatching { file.delete() }
         }
     }
+
+    /** Total size of the files currently in the cache, in bytes. */
+    fun currentSizeBytesUnfiltered(): Long =
+        dir.listFiles()?.sumOf { it.length() } ?: 0L
 
     /**
      * Preloads track into disk cache in the background so future playback

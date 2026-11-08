@@ -190,6 +190,32 @@ interface Strings {
     fun cacheUsed(usedMb: Long): String
     val clearCache: String
     val cacheCleared: String
+
+    // Discord Rich Presence
+    val sectionDiscord: String
+    val discordPresence: String
+    val discordPresenceNote: String
+    val discordClientId: String
+    val discordClientIdNote: String
+
+    // Updates
+    val sectionUpdates: String
+    val autoUpdateCheck: String
+    val autoUpdateCheckNote: String
+    val checkNow: String
+    val checkingUpdates: String
+    val upToDate: String
+    val updateAvailable: String
+    fun updateAvailableVersion(version: String): String
+    val downloadUpdate: String
+    val downloadingUpdate: String
+    val updateDownloaded: String
+    val openDownloads: String
+    val updateFailed: String
+
+    // Volume
+    val volumeScrollHint: String
+
     val sectionUser: String
     val notLoggedIn: String
     val signOut: String
@@ -369,6 +395,31 @@ private object CsStrings : Strings {
     override fun cacheUsed(usedMb: Long) = "Využito: $usedMb MB"
     override val clearCache = "Vymazat mezipaměť"
     override val cacheCleared = "Mezipaměť vymazána"
+
+    override val sectionDiscord = "Discord"
+    override val discordPresence = "Zobrazovat přehrávání v Discordu"
+    override val discordPresenceNote = "Aktuálně hraná skladba se objeví ve tvém profilu " +
+        "jako Rich Presence. Vyžaduje spuštěný Discord."
+    override val discordClientId = "Discord Application ID"
+    override val discordClientIdNote = "ID aplikace z Discord Developer Portal. Bez něj se " +
+        "Rich Presence nezobrazí."
+
+    override val sectionUpdates = "Aktualizace"
+    override val autoUpdateCheck = "Automaticky kontrolovat aktualizace"
+    override val autoUpdateCheckNote = "Jednou za 6 hodin se ověří nové vydání na GitHubu."
+    override val checkNow = "Zkontrolovat teď"
+    override val checkingUpdates = "Kontroluji…"
+    override val upToDate = "Máš nejnovější verzi."
+    override val updateAvailable = "Je dostupná nová verze."
+    override fun updateAvailableVersion(version: String) = "Dostupná verze $version"
+    override val downloadUpdate = "Stáhnout aktualizaci"
+    override val downloadingUpdate = "Stahuji aktualizaci…"
+    override val updateDownloaded = "Aktualizace stažena. Rozbal ji a spusť Gladix.exe."
+    override val openDownloads = "Otevřít složku"
+    override val updateFailed = "Kontrola aktualizací selhala"
+
+    override val volumeScrollHint = "Kolečkem myši měníš hlasitost"
+
     override val sectionUser = "Účet"
     override val notLoggedIn = "Nepřihlášeno"
     override val signOut = "Odhlásit se"
@@ -549,6 +600,31 @@ private object EnStrings : Strings {
     override fun cacheUsed(usedMb: Long) = "Used: $usedMb MB"
     override val clearCache = "Clear cache"
     override val cacheCleared = "Cache cleared"
+
+    override val sectionDiscord = "Discord"
+    override val discordPresence = "Show playback in Discord"
+    override val discordPresenceNote = "The track you are playing appears on your profile " +
+        "as Rich Presence. Requires Discord to be running."
+    override val discordClientId = "Discord Application ID"
+    override val discordClientIdNote = "The application id from the Discord Developer " +
+        "Portal. Without it Rich Presence is not shown."
+
+    override val sectionUpdates = "Updates"
+    override val autoUpdateCheck = "Check for updates automatically"
+    override val autoUpdateCheckNote = "Verifies new GitHub releases once every 6 hours."
+    override val checkNow = "Check now"
+    override val checkingUpdates = "Checking…"
+    override val upToDate = "You are on the latest version."
+    override val updateAvailable = "A new version is available."
+    override fun updateAvailableVersion(version: String) = "Version $version available"
+    override val downloadUpdate = "Download update"
+    override val downloadingUpdate = "Downloading update…"
+    override val updateDownloaded = "Update downloaded. Unzip it and run Gladix.exe."
+    override val openDownloads = "Open folder"
+    override val updateFailed = "Update check failed"
+
+    override val volumeScrollHint = "Scroll the mouse wheel to change the volume"
+
     override val sectionUser = "Account"
     override val notLoggedIn = "Not signed in"
     override val signOut = "Sign out"

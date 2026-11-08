@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -23,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,13 +32,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.gladix.desktop.core.AppPaths
 import dev.gladix.desktop.core.PrefsSettings
+import dev.gladix.desktop.core.UpdateChecker
 import dev.gladix.desktop.ui.text.Lang
 import dev.gladix.desktop.ui.text.UiStrings
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(state: AppState) {
     val settings = state.ctx.settings
     val strings = UiStrings.s
+    val scope = rememberCoroutineScope()
     var quality by remember {
         mutableStateOf(settings.getStringOrDefault(PrefsSettings.KEY_QUALITY, PrefsSettings.QUALITY_FLAC))
     }
@@ -283,6 +288,170 @@ fun SettingsScreen(state: AppState) {
 
         HorizontalDivider()
 
+        val discord = state.ctx.discord
+        var discordEnabled by remember {
+            mutableStateOf(settings.getBoolean(PrefsSettings.KEY_DISCORD_PRESENCE) ?: false)
+        }
+        var discordClientId by remember {
+            mutableStateOf(
+                settings.getStringOrDefault(
+                    PrefsSettings.KEY_DISCORD_CLIENT_ID,
+                    PrefsSettings.DEFAULT_DISCORD_CLIENT_ID
+                )
+            )
+        }
+        SettingsSection(strings.sectionDiscord) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        strings.discordPresence,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        strings.discordPresenceNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = discordEnabled,
+                    onCheckedChange = {
+                        discordEnabled = it
+                        settings.putBoolean(PrefsSettings.KEY_DISCORD_PRESENCE, it)
+                        discord.setEnabled(it)
+                    }
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = discordClientId,
+                onValueChange = {
+                    discordClientId = it
+                    settings.putString(PrefsSettings.KEY_DISCORD_CLIENT_ID, it.trim())
+                    if (discordEnabled) {
+                        discord.setEnabled(false)
+                        discord.setEnabled(true)
+                    }
+                },
+                label = { Text(strings.discordClientId) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                strings.discordClientIdNote,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+        }
+
+        HorizontalDivider()
+
+        val updates = state.ctx.updates
+        var autoUpdate by remember {
+            mutableStateOf(settings.getBoolean(PrefsSettings.KEY_UPDATE_CHECK) ?: true)
+        }
+        SettingsSection(strings.sectionUpdates) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        strings.autoUpdateCheck,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        strings.autoUpdateCheckNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = autoUpdate,
+                    onCheckedChange = {
+                        autoUpdate = it
+                        settings.putBoolean(PrefsSettings.KEY_UPDATE_CHECK, it)
+                    }
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = { scope.launch { updates.check() } },
+                    enabled = updates.state != UpdateChecker.State.Checking
+                ) { Text(strings.checkNow) }
+
+                when (updates.state) {
+                    UpdateChecker.State.Checking -> Text(
+                        strings.checkingUpdates,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    UpdateChecker.State.UpToDate -> Text(
+                        strings.upToDate,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    UpdateChecker.State.Available -> OutlinedButton(
+                        onClick = { updates.download() }
+                    ) { Text(strings.downloadUpdate) }
+
+                    UpdateChecker.State.Downloading -> Text(
+                        strings.downloadingUpdate,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    UpdateChecker.State.Downloaded -> OutlinedButton(
+                        onClick = { updates.openDownloadFolder() }
+                    ) { Text(strings.openDownloads) }
+
+                    UpdateChecker.State.Failed -> Text(
+                        "${strings.updateFailed}: ${updates.error.orEmpty()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+
+                    UpdateChecker.State.Idle -> Unit
+                }
+            }
+
+            when (updates.state) {
+                UpdateChecker.State.Available -> {
+                    val version = updates.latestVersion.orEmpty()
+                    Text(
+                        strings.updateAvailableVersion(version),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                UpdateChecker.State.Downloading -> {
+                    LinearProgressIndicator(
+                        progress = { updates.downloadProgress },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    )
+                }
+
+                UpdateChecker.State.Downloaded -> Text(
+                    strings.updateDownloaded,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                else -> Unit
+            }
+        }
+
+        HorizontalDivider()
+
         SettingsSection(strings.sectionUser) {
             Text(
                 text = state.ctx.client.user?.name.orEmpty().ifBlank { strings.notLoggedIn },
@@ -302,6 +471,12 @@ fun SettingsScreen(state: AppState) {
             Text(
                 text = strings.aboutLine,
                 style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = "v${dev.gladix.desktop.core.AppVersion.NAME}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
             )
             Text(
                 text = strings.aboutCredits,
