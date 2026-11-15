@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Self-check (Windows, JDK 21)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # The self-check is headless and needs no display, but it does exercise
+      # the Windows media session and the audio decoders, so Windows is the
+      # only runner that can prove the build works.
+      - name: Compile and run the self-check
+        run: ./gradlew.bat :desktop:compileKotlin :desktop:selfCheck --console=plain
