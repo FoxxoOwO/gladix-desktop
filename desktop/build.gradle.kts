@@ -112,6 +112,33 @@ tasks.register<JavaExec>("selfCheck") {
     )
 }
 
+// Talks to Deezer with the account already signed in on this machine: whole
+// album, its download, its lyrics and the radio built from it.
+tasks.register<JavaExec>("liveCheck") {
+    group = "verification"
+    description = "Runs the live Deezer checks (needs a signed-in account)."
+    mainClass.set("dev.gladix.desktop.tools.LiveCheckKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    jvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
+    standardOutput = System.out
+    javaLauncher.set(
+        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) }
+    )
+}
+
+// Exercises the update swap script against throwaway folders: the running app
+// can never test it, because it only fires after the app has exited.
+tasks.register<JavaExec>("updateProbe") {
+    group = "verification"
+    description = "Runs the update swap script against temp install folders."
+    mainClass.set("dev.gladix.desktop.tools.UpdateProbeKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    standardOutput = System.out
+    javaLauncher.set(
+        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) }
+    )
+}
+
 // Opens every screen in a real window and exits non-zero if one of them throws.
 tasks.register<JavaExec>("uiSmoke") {
     group = "verification"

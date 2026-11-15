@@ -130,9 +130,15 @@ java desktop\icons\IconGenerator.java
   by injecting VK_MEDIA_PLAY_PAUSE, VK_MEDIA_NEXT_TRACK and VK_MEDIA_PREV_TRACK — the
   shell state flipped to Playing and the position moved).
 
-What is **not** verified: downloading a whole album and radio were written against the
-same API as the rest, but have not been exercised by hand with a live account. Lyrics
-are verified on a live account, both from Deezer and from the lrclib.net fallback.
+- `gradlew.bat :desktop:liveCheck` — talks to Deezer with the signed-in account: the
+  whole album *Discovery* loads all 14 tracks, its first track downloads as a 40.5 MB
+  FLAC (`flac` signature, deleted again afterwards), lyrics come back (2130 chars from
+  Deezer, 2127 from the lrclib.net fallback) and radio built from the album returns a
+  76-track queue.
+- `gradlew.bat :desktop:updateProbe` — runs the real update swap script against
+  throwaway folders: a portable install that keeps its data next to `Gladix.exe` keeps
+  `history.json`, `settings.properties`, `downloads/` after the swap, a failed swap
+  rolls back, and an image without `Gladix.exe` is rejected before anything is moved.
 
 ### Requirements
 
@@ -477,6 +483,24 @@ Knihovna, Stažené, Historie, Fronta, Nastavení, Přehrává se, detail alba) 
 sheet řazení, kontextové menu skladby a dialog ukládání do playlistu. Když některý
 composable spadne, skončí nenulovým kódem - to odhalí chyby, které `selfCheck`
 nevidí (ikona, scope `weight`, chybějící řetězec). Účet nepotřebuje.
+
+```bat
+gradlew.bat :desktop:liveCheck
+```
+
+`liveCheck` jde doopravdy na Deezer s účtem, který je na stroji přihlášený
+(`%APPDATA%/Gladix/user.json`). Načte celé album, stáhne první skladbu, vyžádá texty
+(Deezer i záložní lrclib.net) a sestaví radio frontu z alba. Bez přihlášení se jen
+ohlásí a skončí. V CI neběží, protože potřebuje účet.
+
+```bat
+gradlew.bat :desktop:updateProbe
+```
+
+`updateProbe` spustí skutečný aktualizační skript proti dočasným složkám. Ověřuje, že
+přenosná instalace, která má vlastní data vedle `Gladix.exe` (historie, nastavení,
+stažené skladby), o ně po aktualizaci nepřijde, že neúspěšný přenos vrátí starou
+verzi zpět a že obraz bez `Gladix.exe` se odmítne ještě před jakýmkoli přesunem.
 
 ### Sestavení Windows aplikace
 
