@@ -83,7 +83,9 @@ jobs:
           }
           $text = Get-Content $notes -Raw
           if ($text -match '(?m)^SHA-256\s') {
-            $text = [regex]::Replace($text, '(?m)^SHA-256\s+\S+', "SHA-256  $env:SHA256")
+            # The placeholder in the notes is `<filled by CI>`; matching the
+            # whole line keeps its tail out of the published body.
+            $text = [regex]::Replace($text, '(?m)^SHA-256.*$', "SHA-256  $env:SHA256")
           } else {
             $text = $text.TrimEnd() + "`n`nSHA-256  $env:SHA256`n"
           }
