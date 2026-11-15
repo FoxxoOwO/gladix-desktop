@@ -14,6 +14,11 @@ import dev.brahmkshatriya.echo.common.models.Shelf
 import dev.brahmkshatriya.echo.common.models.Track
 import dev.gladix.desktop.AppContext
 import dev.gladix.desktop.ui.text.UiStrings
+import androidx.compose.ui.input.key.Key
+import dev.gladix.desktop.core.PrefsSettings
+import dev.gladix.desktop.core.Shortcut
+import dev.gladix.desktop.core.Shortcuts
+import dev.gladix.desktop.core.ThemePreference
 
 /**
  * A tiny async loader used by every screen: reloads when [keys] change and
@@ -92,6 +97,67 @@ class AppState(val ctx: AppContext) {
     var searchQuery by mutableStateOf("")
     var loginError by mutableStateOf<String?>(null)
     var toast by mutableStateOf<String?>(null)
+
+    private var themeChoice by mutableStateOf(
+        ThemePreference.normalize(
+            ctx.settings.getStringOrDefault(PrefsSettings.KEY_THEME, PrefsSettings.THEME_SYSTEM)
+        )
+    )
+
+    /**
+     * The theme choice (`system`/`dark`/`light`); [ThemePreference] turns it into
+     * light/dark. Assigning it persists, so the settings screen only writes
+     * `state.theme = ...` and Main recomposes into the new palette.
+     */
+    var theme: String
+        get() = themeChoice
+        set(value) {
+            val normalized = ThemePreference.normalize(value)
+            themeChoice = normalized
+            ctx.settings.putString(PrefsSettings.KEY_THEME, normalized)
+        }
+
+    /** Bumped when a shortcut asks the search field for focus. */
+    var searchFocusTick by mutableStateOf(0)
+        private set
+
+    fun focusSearch() {
+        navigate(Page.Search)
+        searchFocusTick++
+    }
+
+    /**
+     * Runs the shortcut bound to [key], if any. Returns true when the event was
+     * used, so the window does not let it fall through to the menu system.
+     */
+    fun handleShortcut(
+        key: Key,
+        ctrl: Boolean = false,
+        shift: Boolean = false,
+        alt: Boolean = false
+    ): Boolean = when (Shortcuts.of(key, ctrl, shift, alt)) {
+        Shortcut.PlayPause -> {
+            if (ctx.player.current != null) ctx.player.togglePlayPause()
+            ctx.player.current != null
+        }
+
+        Shortcut.Next -> {
+            ctx.player.next()
+            ctx.player.current != null
+        }
+
+        Shortcut.Previous -> {
+            ctx.player.previous()
+            ctx.player.current != null
+        }
+
+        Shortcut.Search -> {
+            focusSearch()
+            true
+        }
+
+        null -> false
+    }
 
     /**
      * Derived from the client instead of being cached in a field: the session is

@@ -123,6 +123,12 @@ class PrefsSettings(val file: File = AppPaths.settingsFile) : Settings {
         /** UI language of the app itself (`cs`/`en`), not the Deezer content language. */
         const val KEY_UI_LANG = "desktop_ui_lang"
 
+        /** Colour scheme of the app: [THEME_SYSTEM], [THEME_DARK] or [THEME_LIGHT]. */
+        const val KEY_THEME = "desktop_theme"
+        const val THEME_SYSTEM = "system"
+        const val THEME_DARK = "dark"
+        const val THEME_LIGHT = "light"
+
         /** `desktop_sort_field_<scope>`: sort field of one track list (album, playlist, queue...). */
         const val KEY_SORT_FIELD_PREFIX = "desktop_sort_field_"
 

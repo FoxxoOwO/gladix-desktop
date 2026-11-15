@@ -1,5 +1,6 @@
 package dev.gladix.desktop
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -7,11 +8,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import dev.gladix.desktop.core.PrefsSettings
+import dev.gladix.desktop.core.ThemePreference
 import dev.gladix.desktop.core.platform.AppIdentity
 import dev.gladix.desktop.core.platform.WindowChrome
 import dev.gladix.desktop.ui.App
@@ -56,6 +64,16 @@ private fun launchUi() = application {
     }
 
     Window(
+        onKeyEvent = { event ->
+            // Window level, not preview: a focused text field gets Space first, so
+            // typing in the search box does not toggle playback.
+            event.type == KeyEventType.KeyDown && state.handleShortcut(
+                event.key,
+                event.isCtrlPressed,
+                event.isShiftPressed,
+                event.isAltPressed
+            )
+        },
         onCloseRequest = {
             runCatching { context.player.stop() }
             // A prepared update is swapped in after the process exits, so the
@@ -69,9 +87,11 @@ private fun launchUi() = application {
     ) {
         window.minimumSize = java.awt.Dimension(980, 620)
         // The native caption is repainted in the app colours; without this the
-        // dark UI sits under a light system title bar.
-        LaunchedEffect(Unit) { WindowChrome.applyDarkFrame(window, "Gladix") }
-        GladixTheme(useDark = true) {
+        // dark UI sits under a light system title bar. It follows the theme, and
+        // is re-applied whenever the palette changes.
+        val dark = ThemePreference.isDark(state.theme, isSystemInDarkTheme())
+        LaunchedEffect(dark) { WindowChrome.applyFrame(window, dark, "Gladix") }
+        GladixTheme(useDark = dark) {
             if (ready) {
                 App(state)
             }

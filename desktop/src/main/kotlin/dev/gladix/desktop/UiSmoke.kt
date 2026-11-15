@@ -26,8 +26,10 @@ import dev.brahmkshatriya.echo.common.models.Playlist
 import dev.brahmkshatriya.echo.common.models.Shelf
 import dev.brahmkshatriya.echo.common.models.Track
 import dev.gladix.desktop.ui.AllItems
+import androidx.compose.ui.input.key.Key
 import dev.gladix.desktop.ui.App
 import dev.gladix.desktop.ui.AppState
+import dev.gladix.desktop.ui.GladixTheme
 import dev.gladix.desktop.ui.Page
 import dev.gladix.desktop.ui.SaveToPlaylistDialog
 import dev.gladix.desktop.ui.ShelvesColumn
@@ -104,7 +106,11 @@ fun main() {
     )
 
     var phase by mutableStateOf(0)
-    val phases = screens.size + 4 // + shelf types, sort sheet, track menu, playlist dialog
+    // The light palette is a separate set of colours that no other path renders,
+    // so it gets its own phase: a missing role shows up here, not on a user's
+    // screen after they switch themes.
+    var lightTheme by mutableStateOf(false)
+    val phases = screens.size + 5 // + shelf types, sort sheet, track menu, dialog, light+keys
 
     println("uiSmoke: $phases phases")
     application {
@@ -115,7 +121,7 @@ fun main() {
             MaterialTheme {
                 Surface(Modifier.fillMaxSize()) {
                     Box {
-                        App(state)
+                        GladixTheme(useDark = !lightTheme) { App(state) }
                         LaunchedEffect(Unit) {
                             for ((index, screen) in screens.withIndex()) {
                                 state.page = screen.second
@@ -136,6 +142,23 @@ fun main() {
                             delay(400)
                             phase = screens.size + 3
                             delay(400)
+                            // Light palette plus the keyboard map: Ctrl+F has to
+                            // switch to the search page and focus its field.
+                            println("uiSmoke: light theme + shortcuts")
+                            lightTheme = true
+                            state.page = Page.Home
+                            phase = screens.size + 4
+                            delay(500)
+                            if (!state.handleShortcut(Key.F, ctrl = true)) {
+                                println("uiSmoke: FAIL ctrl+F not handled")
+                                exitProcess(1)
+                            }
+                            if (state.page != Page.Search) {
+                                println("uiSmoke: FAIL ctrl+F landed on ${state.page}")
+                                exitProcess(1)
+                            }
+                            delay(300)
+                            lightTheme = false
                             println("uiSmoke: done")
                             exitProcess(0)
                         }

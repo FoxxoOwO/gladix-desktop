@@ -82,6 +82,35 @@ fun SettingsScreen(state: AppState) {
                     )
                 }
             }
+
+            Text(
+                strings.themeLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                listOf(
+                    PrefsSettings.THEME_SYSTEM to strings.themeSystem,
+                    PrefsSettings.THEME_DARK to strings.themeDark,
+                    PrefsSettings.THEME_LIGHT to strings.themeLight
+                ).forEach { (value, label) ->
+                    FilterChip(
+                        selected = state.theme == value,
+                        onClick = { state.theme = value },
+                        label = { Text(label) }
+                    )
+                }
+            }
+            Text(
+                strings.shortcutsHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 10.dp)
+            )
         }
 
         HorizontalDivider()

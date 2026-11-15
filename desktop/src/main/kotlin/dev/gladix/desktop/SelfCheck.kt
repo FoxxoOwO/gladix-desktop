@@ -14,6 +14,9 @@ import dev.gladix.desktop.core.DownloadManager
 import dev.gladix.desktop.core.HistoryStore
 import dev.gladix.desktop.core.Lrclib
 import dev.gladix.desktop.core.PrefsSettings
+import dev.gladix.desktop.core.Shortcut
+import dev.gladix.desktop.core.Shortcuts
+import dev.gladix.desktop.core.ThemePreference
 import dev.gladix.desktop.core.platform.AppIdentity
 import dev.gladix.desktop.core.platform.WindowsMediaSession
 import dev.gladix.desktop.core.player.PlayerController
@@ -103,6 +106,35 @@ fun main(args: Array<String>) {
         if (SortField.fromKey("nonsense") != SortField.DEFAULT) error("fallback broken")
         if (!SortSpec().isDefault) error("default spec should be default")
         if (SortSpec(reversed = true).isDefault) error("reversed spec is not default")
+    }
+
+    check("keyboard shortcuts map only the intended combinations") {
+        fun expect(name: String, actual: Shortcut?, wanted: Shortcut?) {
+            if (actual != wanted) error("$name -> $actual, wanted $wanted")
+        }
+        expect("space", Shortcuts.of(androidx.compose.ui.input.key.Key.Spacebar), Shortcut.PlayPause)
+        expect("ctrl+right", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionRight, ctrl = true), Shortcut.Next)
+        expect("ctrl+left", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionLeft, ctrl = true), Shortcut.Previous)
+        expect("ctrl+F", Shortcuts.of(androidx.compose.ui.input.key.Key.F, ctrl = true), Shortcut.Search)
+        // A bare arrow belongs to the focused list, and a shifted or alted key
+        // must never move playback behind the user's back.
+        expect("bare right", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionRight), null)
+        expect("shift+space", Shortcuts.of(androidx.compose.ui.input.key.Key.Spacebar, shift = true), null)
+        expect("alt+space", Shortcuts.of(androidx.compose.ui.input.key.Key.Spacebar, alt = true), null)
+        expect("ctrl+space", Shortcuts.of(androidx.compose.ui.input.key.Key.Spacebar, ctrl = true), null)
+        expect("plain letter", Shortcuts.of(androidx.compose.ui.input.key.Key.F), null)
+    }
+
+    check("theme preference resolves system, dark and light") {
+        if (ThemePreference.normalize(null) != PrefsSettings.THEME_SYSTEM) error("null is not system")
+        if (ThemePreference.normalize("purple") != PrefsSettings.THEME_SYSTEM) error("unknown is not system")
+        if (ThemePreference.normalize(PrefsSettings.THEME_LIGHT) != PrefsSettings.THEME_LIGHT) error("light reset")
+        if (!ThemePreference.isDark(PrefsSettings.THEME_SYSTEM, true)) error("system should follow dark")
+        if (ThemePreference.isDark(PrefsSettings.THEME_SYSTEM, false)) error("system should follow light")
+        if (!ThemePreference.isDark(PrefsSettings.THEME_DARK, false)) error("dark ignored")
+        if (ThemePreference.isDark(PrefsSettings.THEME_LIGHT, true)) error("light ignored")
+        if (ThemePreference.choices.first() != PrefsSettings.THEME_SYSTEM) error("system should be first")
+        if (ThemePreference.choices.size != 3) error("choices: ${ThemePreference.choices}")
     }
 
     check("feed shelves sort their tracks and item rows") {
