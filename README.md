@@ -185,9 +185,10 @@ Releases are published by CI, not by hand:
    `release\notes-<version>.md`.
 2. Commit as `chore(release): v<version>` and merge it into `master`.
 3. `git tag v<version>` and `git push origin v<version>` — `.github/workflows/release.yml`
-   then builds the image on `windows-latest`, packs the ZIP, replaces the `SHA-256` line
-   in the notes with the hash of the artifact it just built, and publishes the GitHub
-   release.
+   then builds the image on `windows-latest`, packs the ZIP, fills the `SHA-256` line of
+   the notes with the hash of the artifact it just built and publishes the GitHub
+   release. Leave that line as `SHA-256  <filled by CI>` in the committed notes, so it
+   never claims a hash that belongs to somebody else's build.
 
 `ci.yml` runs `selfCheck` on every push and pull request, so a broken build shows up
 before a tag does. The release workflow refuses to publish when the tag and
