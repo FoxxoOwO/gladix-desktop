@@ -166,6 +166,11 @@ interface Strings {
     val settingsTitle: String
     val sectionAppearance: String
     val uiLanguage: String
+    val themeLabel: String
+    val themeSystem: String
+    val themeDark: String
+    val themeLight: String
+    val shortcutsHint: String
     val sectionPlayback: String
     val streamQuality: String
     val qualityNote: String
@@ -373,6 +378,13 @@ private object CsStrings : Strings {
     override val settingsTitle = "Nastavení"
     override val sectionAppearance = "Vzhled"
     override val uiLanguage = "Jazyk aplikace"
+    override val themeLabel = "Motiv"
+    override val themeSystem = "Podle systému"
+    override val themeDark = "Tmavý"
+    override val themeLight = "Světlý"
+    override val shortcutsHint =
+        "Zkratky: mezerník přehrát/pauza, Ctrl+←/→ předchozí/další, Ctrl+Shift+←/→ posun o 10 s, " +
+        "Ctrl+↑/↓ hlasitost, M ztlumit, Ctrl+F hledat, Esc zpět."
     override val sectionPlayback = "Přehrávání"
     override val streamQuality = "Kvalita streamu"
     override val qualityNote = "Když zvolená kvalita není dostupná, přehrávač použije nejbližší " +
@@ -587,6 +599,13 @@ private object EnStrings : Strings {
     override val settingsTitle = "Settings"
     override val sectionAppearance = "Appearance"
     override val uiLanguage = "Application language"
+    override val themeLabel = "Theme"
+    override val themeSystem = "Match system"
+    override val themeDark = "Dark"
+    override val themeLight = "Light"
+    override val shortcutsHint =
+        "Shortcuts: space play/pause, Ctrl+←/→ previous/next, Ctrl+Shift+←/→ seek 10 s, " +
+        "Ctrl+↑/↓ volume, M mute, Ctrl+F search, Esc back."
     override val sectionPlayback = "Playback"
     override val streamQuality = "Stream quality"
     override val qualityNote = "When the selected quality is unavailable, the player falls back to " +

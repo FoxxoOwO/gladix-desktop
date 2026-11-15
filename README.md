@@ -85,10 +85,11 @@ Settings with the Windows integration toggle:
 | Sharing a link (to the clipboard) | ✅ |
 | Settings: quality, country, language, proxy, Deezer scrobbling | ✅ |
 | Media keys (play/pause, next, previous) | ✅ through Windows SMTC |
+| Keyboard shortcuts: space play/pause, Ctrl+←/→ previous/next, Ctrl+F search | ✅ space is left alone while a text field has focus |
 | Playback in Windows quick settings (title, artist, artwork, seek) | ✅ |
 | Discord Rich Presence (track, artist, album, elapsed time) | ✅ needs a Discord Application ID |
 | Automatic update check, download, unpack and in-place install (no manual unzip) | ✅ |
-| Light/dark mode | ⚠️ dark only (the theme is prepared) |
+| Light/dark mode (system / dark / light in Settings) | ✅ the window frame follows the palette |
 | Android Auto, Android TV, Chromecast | ❌ not portable |
 | Local files outside Deezer | ❌ out of scope |
 | Plugin system for other extensions | ❌ Deezer is built in |
@@ -405,10 +406,11 @@ Nastavení s přepínačem Windows integrace:
 | Sdílení odkazu (do schránky) | ✅ |
 | Nastavení: kvalita, země, jazyk, proxy, Deezer logging | ✅ |
 | Ovládání mediálními klávesami (přehrát/pauza, další, předchozí) | ✅ přes Windows SMTC |
+| Klávesové zkratky: mezerník přehrát/pauza, Ctrl+←/→ předchozí/další, Ctrl+F hledat | ✅ mezerník zůstává textovému poli, když má fokus |
 | Přehrávání v rychlých nastaveních Windows (název, interpret, obal, seek) | ✅ |
 | Discord Rich Presence (skladba, interpret, album, ubíhající čas) | ✅ vyžaduje Discord Application ID |
 | Automatická kontrola aktualizací včetně stažení, rozbalení a instalace na místě (bez ruční extrakce) | ✅ |
-| Světlý/tmavý režim | ⚠️ jen tmavý (téma je připravené) |
+| Světlý/tmavý režim (systém / tmavý / světlý v nastavení) | ✅ rámeček okna se přizpůsobí paletě |
 | Android Auto, Android TV, Chromecast | ❌ neportsovatelné |
 | Lokální soubory mimo Deezer | ❌ mimo rozsah |
 | Plugin systém pro jiné rozšíření | ❌ Deezer je zabudovaný |

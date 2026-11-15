@@ -37,6 +37,11 @@ object WindowChrome {
     /** `DarkColors.surfaceVariant` = #221D2C, the hairline around the window. */
     private const val BORDER_COLOR = 0x002C_1D22
 
+    /** The same three roles from `LightColors`: #FDFBFF, #1B1721 and #B6ACC4. */
+    private const val LIGHT_CAPTION_COLOR = 0x00FF_FBFD
+    private const val LIGHT_TEXT_COLOR = 0x0021_171B
+    private const val LIGHT_BORDER_COLOR = 0x00C4_ACB6
+
     private const val DWMWA_USE_IMMERSIVE_DARK_MODE = 20
     private const val DWMWA_USE_IMMERSIVE_DARK_MODE_PRE_20H1 = 19
     private const val DWMWA_BORDER_COLOR = 34
@@ -50,26 +55,48 @@ object WindowChrome {
     private interface User32 : Library {
         fun FindWindow(lpClassName: WString?, lpWindowName: WString?): Pointer?
         fun IsWindow(hwnd: Pointer?): Boolean
+        fun SetWindowPos(
+            hwnd: Pointer,
+            insertAfter: Pointer?,
+            x: Int,
+            y: Int,
+            width: Int,
+            height: Int,
+            flags: Int
+        ): Boolean
     }
 
     private val isWindows = System.getProperty("os.name").orEmpty().lowercase().contains("win")
 
     /**
      * Must run on the AWT thread once the window exists — call it from a
-     * `LaunchedEffect` inside the window content.
+     * `LaunchedEffect` inside the window content. [dark] selects the palette the
+     * UI is drawn with; the caption follows it so the title bar never belongs to
+     * the other scheme.
      */
-    fun applyDarkFrame(window: Window, title: String = "Gladix") {
+    fun applyFrame(window: Window, dark: Boolean = true, title: String = "Gladix") {
         if (!isWindows) return
         runCatching {
             val hwnd = windowHandle(window, title) ?: return
             val dwm = Native.load("dwmapi", DwmApi::class.java) as DwmApi
-            setInt(dwm, hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, 1)
-            setInt(dwm, hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE_PRE_20H1, 1)
-            setInt(dwm, hwnd, DWMWA_CAPTION_COLOR, CAPTION_COLOR)
-            setInt(dwm, hwnd, DWMWA_TEXT_COLOR, TEXT_COLOR)
-            setInt(dwm, hwnd, DWMWA_BORDER_COLOR, BORDER_COLOR)
+            setInt(dwm, hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, if (dark) 1 else 0)
+            setInt(dwm, hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE_PRE_20H1, if (dark) 1 else 0)
+            setInt(dwm, hwnd, DWMWA_CAPTION_COLOR, if (dark) CAPTION_COLOR else LIGHT_CAPTION_COLOR)
+            setInt(dwm, hwnd, DWMWA_TEXT_COLOR, if (dark) TEXT_COLOR else LIGHT_TEXT_COLOR)
+            setInt(dwm, hwnd, DWMWA_BORDER_COLOR, if (dark) BORDER_COLOR else LIGHT_BORDER_COLOR)
+            // Force a non-client repaint, otherwise an already painted caption
+            // keeps the previous colours until the window is resized.
+            // SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE: repaint the
+            // non-client area only.
+            user32().SetWindowPos(hwnd, null, 0, 0, 0, 0, 0x0001 or 0x0002 or 0x0004 or 0x0010)
         }
     }
+
+    /** Kept for callers that only ever want the dark caption. */
+    fun applyDarkFrame(window: Window, title: String = "Gladix") = applyFrame(window, true, title)
+
+    private fun user32(): User32 =
+        Native.load("user32", User32::class.java, W32APIOptions.DEFAULT_OPTIONS) as User32
 
     /**
      * The HWND is not exposed by AWT, so it is looked up twice: first by the
@@ -78,7 +105,7 @@ object WindowChrome {
      * created by a different AWT peer implementation.
      */
     private fun windowHandle(window: Window, title: String): Pointer? {
-        val user32 = Native.load("user32", User32::class.java, W32APIOptions.DEFAULT_OPTIONS) as User32
+        val user32 = user32()
         val byClass = user32.FindWindow(WString("SunAwtFrame"), WString(title))
         if (byClass != null && byClass != Pointer.NULL && user32.IsWindow(byClass)) return byClass
         val byTitle = user32.FindWindow(null, WString(title))

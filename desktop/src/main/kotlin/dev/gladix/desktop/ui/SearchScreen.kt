@@ -25,6 +25,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -39,6 +41,13 @@ fun SearchScreen(state: AppState) {
 
     val recent = remember(submitted) {
         state.ctx.settings.getStringSet(PrefsKeys.SEARCH_HISTORY)?.toList() ?: emptyList()
+    }
+
+    // Ctrl+F anywhere in the window lands here; the tick is what makes a second
+    // press refocus the field after the user clicked somewhere else.
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(state.searchFocusTick) {
+        if (state.searchFocusTick > 0) focusRequester.requestFocus()
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -61,6 +70,7 @@ fun SearchScreen(state: AppState) {
                 state.searchQuery = query
             }),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp)
+                .focusRequester(focusRequester)
         )
 
         if (recent.isNotEmpty() && submitted.isBlank()) {

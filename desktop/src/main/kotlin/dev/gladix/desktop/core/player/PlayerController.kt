@@ -294,6 +294,14 @@ class PlayerController(
         settings.putString(PrefsSettings.KEY_VOLUME, volume.toString())
     }
 
+    /** Level restored when [toggleMute] is pressed on a muted player. */
+    private var volumeBeforeMute = 0.85f
+
+    fun toggleMute() {
+        if (volume > 0.01f) volumeBeforeMute = volume
+        changeVolume(mutedVolume(volume, volumeBeforeMute))
+    }
+
     fun cycleRepeat() {
         repeatMode = when (repeatMode) {
             RepeatMode.OFF -> RepeatMode.ALL
@@ -493,3 +501,8 @@ class PlayerController(
         error = null
     }
 }
+/** Volume after pressing mute: zero when audible, otherwise the remembered level. */
+internal fun mutedVolume(current: Float, remembered: Float): Float =
+    if (current > 0.01f) 0f else remembered.takeIf { it > 0.01f } ?: DEFAULT_VOLUME
+
+private const val DEFAULT_VOLUME = 0.85f
