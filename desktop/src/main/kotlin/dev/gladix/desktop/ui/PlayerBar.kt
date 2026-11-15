@@ -235,13 +235,9 @@ private fun SeekBar(player: PlayerController) {
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun VolumeControl(player: PlayerController) {
-    var muted by remember { mutableStateOf(false) }
-    var before by remember { mutableStateOf(0.85f) }
-
     // The wheel is the quickest way to nudge the volume, so a hover over the
     // whole control (icon + slider) listens for it, not just the thin slider.
     val onScroll: (Float) -> Unit = { delta ->
-        muted = false
         player.changeVolume(player.volume + delta * VOLUME_STEP)
     }
 
@@ -267,17 +263,9 @@ private fun VolumeControl(player: PlayerController) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.onPointerScroll(onScroll)
         ) {
-        IconButton(onClick = {
-            muted = !muted
-            if (muted) {
-                before = player.volume
-                player.changeVolume(0f)
-            } else {
-                player.changeVolume(before.takeIf { it > 0.01f } ?: 0.85f)
-            }
-        }) {
+        IconButton(onClick = { player.toggleMute() }) {
             Icon(
-                imageVector = if (muted || player.volume <= 0.01f) Icons.AutoMirrored.Rounded.VolumeOff
+                imageVector = if (player.volume <= 0.01f) Icons.AutoMirrored.Rounded.VolumeOff
                 else Icons.AutoMirrored.Rounded.VolumeUp,
                 contentDescription = UiStrings.s.volume
             )
@@ -285,10 +273,7 @@ private fun VolumeControl(player: PlayerController) {
         Box(modifier = Modifier.width(96.dp)) {
             Slider(
                 value = player.volume,
-                onValueChange = {
-                    muted = false
-                    player.changeVolume(it)
-                }
+                onValueChange = { player.changeVolume(it) }
             )
         }
         }

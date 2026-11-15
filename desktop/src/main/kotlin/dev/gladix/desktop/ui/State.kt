@@ -156,7 +156,38 @@ class AppState(val ctx: AppContext) {
             true
         }
 
+        Shortcut.VolumeUp -> {
+            ctx.player.changeVolume(ctx.player.volume + VOLUME_STEP)
+            true
+        }
+
+        Shortcut.VolumeDown -> {
+            ctx.player.changeVolume(ctx.player.volume - VOLUME_STEP)
+            true
+        }
+
+        Shortcut.Mute -> {
+            ctx.player.toggleMute()
+            true
+        }
+
+        Shortcut.SeekForward -> seekBy(SEEK_STEP_MS)
+
+        Shortcut.SeekBack -> seekBy(-SEEK_STEP_MS)
+
+        Shortcut.Back -> if (canGoBack) {
+            back()
+            true
+        } else false
+
         null -> false
+    }
+
+    /** Moves inside the current track; false when nothing plays. */
+    private fun seekBy(deltaMs: Long): Boolean {
+        if (ctx.player.current == null) return false
+        ctx.player.seekTo(ctx.player.positionMs + deltaMs)
+        return true
     }
 
     /**
@@ -228,3 +259,9 @@ fun formatCount(count: Long?): String? {
         else -> count.toString()
     }
 }
+
+/** One volume key press. */
+private const val VOLUME_STEP = 0.05f
+
+/** One seek key press. */
+private const val SEEK_STEP_MS = 10_000L

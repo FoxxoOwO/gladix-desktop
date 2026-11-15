@@ -20,6 +20,7 @@ import dev.gladix.desktop.core.ThemePreference
 import dev.gladix.desktop.core.platform.AppIdentity
 import dev.gladix.desktop.core.platform.WindowsMediaSession
 import dev.gladix.desktop.core.player.PlayerController
+import dev.gladix.desktop.core.player.mutedVolume
 import dev.gladix.desktop.core.player.Decoders
 import dev.gladix.desktop.core.player.SavedQueue
 import dev.gladix.desktop.core.player.StreamQuality
@@ -116,13 +117,30 @@ fun main(args: Array<String>) {
         expect("ctrl+right", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionRight, ctrl = true), Shortcut.Next)
         expect("ctrl+left", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionLeft, ctrl = true), Shortcut.Previous)
         expect("ctrl+F", Shortcuts.of(androidx.compose.ui.input.key.Key.F, ctrl = true), Shortcut.Search)
+        expect("ctrl+shift+right", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionRight, ctrl = true, shift = true), Shortcut.SeekForward)
+        expect("ctrl+shift+left", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionLeft, ctrl = true, shift = true), Shortcut.SeekBack)
+        expect("ctrl+up", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionUp, ctrl = true), Shortcut.VolumeUp)
+        expect("ctrl+down", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionDown, ctrl = true), Shortcut.VolumeDown)
+        expect("M", Shortcuts.of(androidx.compose.ui.input.key.Key.M), Shortcut.Mute)
+        expect("escape", Shortcuts.of(androidx.compose.ui.input.key.Key.Escape), Shortcut.Back)
         // A bare arrow belongs to the focused list, and a shifted or alted key
         // must never move playback behind the user's back.
         expect("bare right", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionRight), null)
+        expect("bare up", Shortcuts.of(androidx.compose.ui.input.key.Key.DirectionUp), null)
+        expect("shift+M", Shortcuts.of(androidx.compose.ui.input.key.Key.M, shift = true), null)
+        expect("alt+M", Shortcuts.of(androidx.compose.ui.input.key.Key.M, alt = true), null)
+        expect("ctrl+M", Shortcuts.of(androidx.compose.ui.input.key.Key.M, ctrl = true), null)
+        expect("shift+escape", Shortcuts.of(androidx.compose.ui.input.key.Key.Escape, shift = true), null)
         expect("shift+space", Shortcuts.of(androidx.compose.ui.input.key.Key.Spacebar, shift = true), null)
         expect("alt+space", Shortcuts.of(androidx.compose.ui.input.key.Key.Spacebar, alt = true), null)
         expect("ctrl+space", Shortcuts.of(androidx.compose.ui.input.key.Key.Spacebar, ctrl = true), null)
         expect("plain letter", Shortcuts.of(androidx.compose.ui.input.key.Key.F), null)
+    }
+
+    check("mute keeps the level to come back to") {
+        if (mutedVolume(0.6f, 0.6f) != 0f) error("an audible player should mute to zero")
+        if (mutedVolume(0f, 0.6f) != 0.6f) error("unmute should restore the remembered level")
+        if (mutedVolume(0f, 0f) != 0.85f) error("a forgotten level should fall back to the default")
     }
 
     check("theme preference resolves system, dark and light") {
