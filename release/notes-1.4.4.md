@@ -6,7 +6,7 @@ Gladix Desktop 1.4.4 — updates install themselves, no more unzipping by hand.
 needed. Unzip and run `Gladix\Gladix.exe` (only the first install needs this step).
 
 ```
-SHA-256  3f35c4bf3a04cd702bc32329e3b87116f85bd96ff94ce26dfa64047fef578ebb
+SHA-256  <filled by CI>
 ```
 
 ## What's new
