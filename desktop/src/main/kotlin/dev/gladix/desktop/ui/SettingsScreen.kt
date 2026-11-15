@@ -424,6 +424,24 @@ fun SettingsScreen(state: AppState) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
+                    UpdateChecker.State.Extracting -> Text(
+                        strings.preparingUpdate,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    UpdateChecker.State.Ready -> Button(
+                        onClick = {
+                            updates.applyAndRestart()
+                        }
+                    ) { Text(strings.restartToUpdate) }
+
+                    UpdateChecker.State.Applying -> Text(
+                        strings.applyingUpdate,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
                     UpdateChecker.State.Downloaded -> OutlinedButton(
                         onClick = { updates.openDownloadFolder() }
                     ) { Text(strings.openDownloads) }
@@ -460,6 +478,27 @@ fun SettingsScreen(state: AppState) {
                     strings.updateDownloaded,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                UpdateChecker.State.Extracting -> Text(
+                    strings.preparingUpdate,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                UpdateChecker.State.Ready -> Text(
+                    strings.updateReady,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                UpdateChecker.State.Applying -> Text(
+                    strings.applyingUpdate,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp)
                 )
 

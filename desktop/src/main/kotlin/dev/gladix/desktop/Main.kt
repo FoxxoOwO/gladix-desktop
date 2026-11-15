@@ -13,6 +13,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import dev.gladix.desktop.core.PrefsSettings
 import dev.gladix.desktop.core.platform.AppIdentity
+import dev.gladix.desktop.core.platform.WindowChrome
 import dev.gladix.desktop.ui.App
 import dev.gladix.desktop.ui.AppState
 import dev.gladix.desktop.ui.GladixTheme
@@ -45,9 +46,21 @@ private fun launchUi() = application {
 
     val state = remember { AppState(context) }
 
+    // An update only installs itself once this process is gone, so it needs a
+    // way to close the window from the settings screen.
+    LaunchedEffect(context) {
+        context.updates.onExitRequest = {
+            runCatching { context.player.stop() }
+            exitApplication()
+        }
+    }
+
     Window(
         onCloseRequest = {
             runCatching { context.player.stop() }
+            // A prepared update is swapped in after the process exits, so the
+            // next start is already on the new version.
+            runCatching { context.updates.applyOnExit() }
             exitApplication()
         },
         title = "Gladix",
@@ -55,6 +68,9 @@ private fun launchUi() = application {
         state = rememberWindowState(width = 1280.dp, height = 820.dp)
     ) {
         window.minimumSize = java.awt.Dimension(980, 620)
+        // The native caption is repainted in the app colours; without this the
+        // dark UI sits under a light system title bar.
+        LaunchedEffect(Unit) { WindowChrome.applyDarkFrame(window, "Gladix") }
         GladixTheme(useDark = true) {
             if (ready) {
                 App(state)
