@@ -8,9 +8,9 @@ Android UI with a Compose Desktop UI.
 
 [![Latest release](https://img.shields.io/github/v/release/FoxxoOwO/gladix-desktop)](https://github.com/FoxxoOwO/gladix-desktop/releases/latest)
 
-**Download:** [Gladix-1.4.3-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — unzip and run `Gladix\Gladix.exe`, no JDK needed.
+**Download:** [Gladix-1.4.4-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — unzip and run `Gladix\Gladix.exe`, no JDK needed.
 
-**Stažení:** [Gladix-1.4.3-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — rozbalte a spusťte `Gladix\Gladix.exe`, JDK není potřeba.
+**Stažení:** [Gladix-1.4.4-windows-x64.zip](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — rozbalte a spusťte `Gladix\Gladix.exe`, JDK není potřeba.
 
 ---
 
@@ -87,7 +87,7 @@ Settings with the Windows integration toggle:
 | Media keys (play/pause, next, previous) | ✅ through Windows SMTC |
 | Playback in Windows quick settings (title, artist, artwork, seek) | ✅ |
 | Discord Rich Presence (track, artist, album, elapsed time) | ✅ needs a Discord Application ID |
-| Automatic update check with in-app download | ✅ |
+| Automatic update check, download, unpack and in-place install (no manual unzip) | ✅ |
 | Light/dark mode | ⚠️ dark only (the theme is prepared) |
 | Android Auto, Android TV, Chromecast | ❌ not portable |
 | Local files outside Deezer | ❌ out of scope |
@@ -382,7 +382,7 @@ Nastavení s přepínačem Windows integrace:
 | Ovládání mediálními klávesami (přehrát/pauza, další, předchozí) | ✅ přes Windows SMTC |
 | Přehrávání v rychlých nastaveních Windows (název, interpret, obal, seek) | ✅ |
 | Discord Rich Presence (skladba, interpret, album, ubíhající čas) | ✅ vyžaduje Discord Application ID |
-| Automatická kontrola aktualizací se stažením přímo v aplikaci | ✅ |
+| Automatická kontrola aktualizací včetně stažení, rozbalení a instalace na místě (bez ruční extrakce) | ✅ |
 | Světlý/tmavý režim | ⚠️ jen tmavý (téma je připravené) |
 | Android Auto, Android TV, Chromecast | ❌ neportsovatelné |
 | Lokální soubory mimo Deezer | ❌ mimo rozsah |

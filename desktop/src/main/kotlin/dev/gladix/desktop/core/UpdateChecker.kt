@@ -28,7 +28,10 @@ class UpdateChecker(
     private val scope: CoroutineScope
 ) {
 
-    enum class State { Idle, Checking, UpToDate, Available, Downloading, Downloaded, Failed }
+    enum class State {
+        Idle, Checking, UpToDate, Available, Downloading,
+        Extracting, Ready, Downloaded, Applying, Failed
+    }
 
     var state by mutableStateOf(State.Idle)
         private set
@@ -49,7 +52,20 @@ class UpdateChecker(
     var downloadedFile by mutableStateOf<File?>(null)
         private set
 
+    /** Unpacked app image, ready to be swapped into the install folder. */
+    var stagedImage by mutableStateOf<File?>(null)
+        private set
+
+    /** Called by the UI to shut the app down after [applyAndRestart]. */
+    var onExitRequest: (() -> Unit)? = null
+
+    private val selfUpdater = SelfUpdater()
+
     private val json = Json { ignoreUnknownKeys = true }
+
+    /** Automatic mode is the default; the settings switch only mutes it. */
+    private val autoEnabled: Boolean
+        get() = settings.getBoolean(PrefsSettings.KEY_UPDATE_CHECK) != false
 
     /** True when a newer release than [AppVersion.NAME] is known. */
     val hasUpdate: Boolean
@@ -62,6 +78,9 @@ class UpdateChecker(
     fun startPeriodicCheck() {
         if (settings.getBoolean(PrefsSettings.KEY_UPDATE_CHECK) == false) return
         scope.launch(Dispatchers.IO) {
+            // A previous run may have left an unapplied staging copy or the
+            // backup folder of a swap that could not delete it.
+            runCatching { selfUpdater.cleanUp() }
             delay(15_000)
             while (isActive) {
                 runCatching { check() }
@@ -98,6 +117,12 @@ class UpdateChecker(
             releaseNotes = release.string("body")
             downloadUrl = pickAsset(release["assets"] as? JsonArray)
             state = if (hasUpdate) State.Available else State.UpToDate
+            // Fully automatic path: while the switch is on, fetch and unpack
+            // the release right away so the user only confirms the restart.
+            // An already prepared update is not downloaded twice.
+            if (hasUpdate && autoEnabled && downloadUrl != null && state == State.Available) {
+                download()
+            }
         }.onFailure {
             state = State.Failed
             error = it.message ?: it::class.simpleName
@@ -107,7 +132,8 @@ class UpdateChecker(
     /** Downloads the release zip into the app data folder. */
     fun download() {
         val url = downloadUrl ?: return
-        if (state == State.Downloading) return
+        if (state == State.Downloading || state == State.Extracting || state == State.Ready) return
+        if (state == State.Applying) return
         state = State.Downloading
         downloadProgress = 0f
         scope.launch(Dispatchers.IO) {
@@ -146,12 +172,57 @@ class UpdateChecker(
             result.onSuccess {
                 downloadedFile = it
                 downloadProgress = 1f
-                state = State.Downloaded
+                prepare(it)
             }.onFailure {
                 state = State.Failed
                 error = it.message ?: it::class.simpleName
             }
         }
+    }
+
+    /**
+     * Unpacks the downloaded ZIP. On a packaged build this always ends in
+     * [State.Ready]; anywhere else it degrades to [State.Downloaded] and the
+     * folder can still be opened by hand.
+     */
+    private suspend fun prepare(zip: File) = withContext(Dispatchers.IO) {
+        if (!selfUpdater.isSupported) {
+            state = State.Downloaded
+            return@withContext
+        }
+        state = State.Extracting
+        runCatching { selfUpdater.stage(zip) }.onSuccess { image ->
+            stagedImage = image
+            state = State.Ready
+            // The ZIP is no longer needed once the image is unpacked.
+            runCatching { zip.delete() }
+        }.onFailure {
+            state = State.Failed
+            error = it.message ?: it::class.simpleName
+        }
+    }
+
+    /** Swaps the staged image in, then asks the UI to close the window. */
+    fun applyAndRestart() {
+        val image = stagedImage ?: return
+        if (state == State.Applying) return
+        if (!selfUpdater.apply(image, restart = true)) {
+            state = State.Failed
+            error = "update script could not be started"
+            return
+        }
+        state = State.Applying
+        onExitRequest?.invoke()
+    }
+
+    /**
+     * Installs a staged update without relaunching, used when the window is
+     * closed normally. The next start already runs the new version.
+     */
+    fun applyOnExit() {
+        val image = stagedImage ?: return
+        if (state != State.Ready) return
+        runCatching { selfUpdater.apply(image, restart = false) }
     }
 
     /** Opens the folder holding the downloaded zip, plus its parent. */

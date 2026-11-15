@@ -214,6 +214,10 @@ interface Strings {
     val downloadUpdate: String
     val downloadingUpdate: String
     val updateDownloaded: String
+    val preparingUpdate: String
+    val updateReady: String
+    val restartToUpdate: String
+    val applyingUpdate: String
     val openDownloads: String
     val updateFailed: String
 
@@ -414,7 +418,7 @@ private object CsStrings : Strings {
 
     override val sectionUpdates = "Aktualizace"
     override val autoUpdateCheck = "Automaticky kontrolovat aktualizace"
-    override val autoUpdateCheckNote = "Jednou za 6 hodin se ověří nové vydání na GitHubu."
+    override val autoUpdateCheckNote = "Jednou za 6 hodin se ověří nové vydání na GitHubu a samo se připraví k instalaci."
     override val checkNow = "Zkontrolovat teď"
     override val checkingUpdates = "Kontroluji…"
     override val upToDate = "Máš nejnovější verzi."
@@ -423,6 +427,10 @@ private object CsStrings : Strings {
     override val downloadUpdate = "Stáhnout aktualizaci"
     override val downloadingUpdate = "Stahuji aktualizaci…"
     override val updateDownloaded = "Aktualizace stažena. Rozbal ji a spusť Gladix.exe."
+    override val preparingUpdate = "Rozbaluji aktualizaci…"
+    override val updateReady = "Aktualizace je připravená. Restartuj nebo ji nech použít při zavření."
+    override val restartToUpdate = "Restartovat a aktualizovat"
+    override val applyingUpdate = "Aktualizace se instaluje, aplikace se zavře…"
     override val openDownloads = "Otevřít složku"
     override val updateFailed = "Kontrola aktualizací selhala"
 
@@ -623,7 +631,7 @@ private object EnStrings : Strings {
 
     override val sectionUpdates = "Updates"
     override val autoUpdateCheck = "Check for updates automatically"
-    override val autoUpdateCheckNote = "Verifies new GitHub releases once every 6 hours."
+    override val autoUpdateCheckNote = "Verifies new GitHub releases once every 6 hours and prepares them automatically."
     override val checkNow = "Check now"
     override val checkingUpdates = "Checking…"
     override val upToDate = "You are on the latest version."
@@ -632,6 +640,10 @@ private object EnStrings : Strings {
     override val downloadUpdate = "Download update"
     override val downloadingUpdate = "Downloading update…"
     override val updateDownloaded = "Update downloaded. Unzip it and run Gladix.exe."
+    override val preparingUpdate = "Unpacking update…"
+    override val updateReady = "Update ready. Restart now or let it apply when you close the app."
+    override val restartToUpdate = "Restart and update"
+    override val applyingUpdate = "Installing the update, the app will close…"
     override val openDownloads = "Open folder"
     override val updateFailed = "Update check failed"
 
