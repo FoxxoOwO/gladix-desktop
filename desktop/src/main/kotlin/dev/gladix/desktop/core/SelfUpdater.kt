@@ -147,18 +147,36 @@ class SelfUpdater(private val installRoot: File? = InstallLocation.root) {
     }.getOrDefault(false)
 
     private fun writeScript(stagedImage: File, root: File, restart: Boolean): File {
-        fun ps(value: String) = value.replace("'", "''")
         val script = File.createTempFile("gladix-update", ".ps1").apply { deleteOnExit() }
         script.writeText(
-            """
+            renderScript(
+                src = stagedImage.absolutePath,
+                dst = root.absolutePath,
+                restart = restart,
+                pid = ProcessHandle.current().pid()
+            )
+        )
+        return script
+    }
+
+    /**
+     * The swap script. Kept free of state so tests can render it for throwaway
+     * folders and prove the swap really leaves user data alone.
+     */
+    internal fun renderScript(src: String, dst: String, restart: Boolean, pid: Long): String {
+        fun ps(value: String) = value.replace("'", "''")
+        return """
             ${'$'}ErrorActionPreference = 'Stop'
-            ${'$'}src = '${ps(stagedImage.absolutePath)}'
-            ${'$'}dst = '${ps(root.absolutePath)}'
+            ${'$'}src = '${ps(src)}'
+            ${'$'}dst = '${ps(dst)}'
             ${'$'}restart = ${if (restart) "${'$'}true" else "${'$'}false"}
-            ${'$'}waitFor = ${ProcessHandle.current().pid()}
+            ${'$'}waitFor = $pid
             ${'$'}log = Join-Path ${'$'}env:TEMP 'gladix-update.log'
             ${'$'}exe = Join-Path ${'$'}dst 'Gladix.exe'
             ${'$'}backup = ${'$'}dst + '.old-' + (Get-Date -Format 'yyyyMMddHHmmss')
+            ${'$'}items = @()
+            ${'$'}moved = @()
+            ${'$'}copied = @()
 
             function Log([string]${'$'}message) {
                 Add-Content -LiteralPath ${'$'}log -Value ((Get-Date -Format 's') + ' ' + ${'$'}message)
@@ -172,32 +190,79 @@ class SelfUpdater(private val installRoot: File? = InstallLocation.root) {
                 }
                 # Give Windows a moment to release the exe and JAR handles.
                 Start-Sleep -Seconds 1
-                if (Test-Path -LiteralPath ${'$'}backup) {
-                    Remove-Item -LiteralPath ${'$'}backup -Recurse -Force -ErrorAction SilentlyContinue
+
+                # Only the entries the image owns are replaced. A portable Gladix
+                # can sit in its own app-data folder, and moving the whole folder
+                # would take history, downloads and settings with it.
+                ${'$'}items = @(Get-ChildItem -LiteralPath ${'$'}src -Force | Select-Object -ExpandProperty Name)
+                if (${'$'}items.Count -eq 0) { throw 'staged image is empty' }
+                if (-not (Test-Path -LiteralPath (Join-Path ${'$'}src 'Gladix.exe'))) {
+                    throw 'staged image is missing Gladix.exe'
                 }
-                Move-Item -LiteralPath ${'$'}dst -Destination ${'$'}backup -Force
-                if (-not (Test-Path -LiteralPath ${'$'}backup)) { throw 'install folder could not be moved aside' }
-                New-Item -ItemType Directory -Path ${'$'}dst -Force | Out-Null
-                Copy-Item -Path (Join-Path ${'$'}src '*') -Destination ${'$'}dst -Recurse -Force
+                New-Item -ItemType Directory -Path ${'$'}backup -Force | Out-Null
+                foreach (${'$'}item in ${'$'}items) {
+                    ${'$'}old = Join-Path ${'$'}dst ${'$'}item
+                    if (Test-Path -LiteralPath ${'$'}old) {
+                        Log ('moving aside: ' + ${'$'}item)
+                        # Recorded before the move: a move that fails halfway
+                        # leaves the old content in the backup folder.
+                        ${'$'}moved += ${'$'}item
+                        Move-Item -LiteralPath ${'$'}old -Destination (Join-Path ${'$'}backup ${'$'}item) -Force
+                    }
+                    Log ('copying in: ' + ${'$'}item)
+                    Copy-Item -LiteralPath (Join-Path ${'$'}src ${'$'}item) -Destination (Join-Path ${'$'}dst ${'$'}item) -Recurse -Force
+                    ${'$'}copied += ${'$'}item
+                }
                 if (-not (Test-Path -LiteralPath ${'$'}exe)) { throw 'new image is missing Gladix.exe' }
                 Remove-Item -LiteralPath ${'$'}backup -Recurse -Force -ErrorAction SilentlyContinue
                 Remove-Item -LiteralPath ${'$'}src -Recurse -Force -ErrorAction SilentlyContinue
                 Log 'update installed'
                 if (${'$'}restart) { Start-Process -FilePath ${'$'}exe }
             } catch {
+                # A half-swapped image is worse than the old one, so every entry
+                # that was already touched goes back, not just a missing exe.
                 Log ('failed: ' + ${'$'}_.Exception.Message)
-                if (-not (Test-Path -LiteralPath ${'$'}exe)) {
-                    Remove-Item -LiteralPath ${'$'}dst -Recurse -Force -ErrorAction SilentlyContinue
-                    if (Test-Path -LiteralPath ${'$'}backup) {
-                        Move-Item -LiteralPath ${'$'}backup -Destination ${'$'}dst -Force -ErrorAction SilentlyContinue
+                Log ('moved: ' + (${'$'}moved -join ',') + ' copied: ' + (${'$'}copied -join ','))
+                # Anything already copied is new, so it goes; anything already
+                # moved aside is old, so it comes back. An entry whose move
+                # failed is still the original and is left alone.
+                foreach (${'$'}item in ${'$'}copied) {
+                    # A brand-new entry with no old counterpart is simply removed.
+                    if (-not (Test-Path -LiteralPath (Join-Path ${'$'}backup ${'$'}item))) {
+                        ${'$'}target = Join-Path ${'$'}dst ${'$'}item
+                        if (Test-Path -LiteralPath ${'$'}target) {
+                            Remove-Item -LiteralPath ${'$'}target -Recurse -Force -ErrorAction SilentlyContinue
+                        }
                     }
                 }
+                foreach (${'$'}item in ${'$'}moved) {
+                    ${'$'}old = Join-Path ${'$'}backup ${'$'}item
+                    if (-not (Test-Path -LiteralPath ${'$'}old)) { continue }
+                    ${'$'}target = Join-Path ${'$'}dst ${'$'}item
+                    if (Test-Path -LiteralPath ${'$'}target) {
+                        Remove-Item -LiteralPath ${'$'}target -Recurse -Force -ErrorAction SilentlyContinue
+                    }
+                    if (Test-Path -LiteralPath ${'$'}target) {
+                        # Locked in place: put the old copy next to it instead of
+                        # destroying the only remaining copy.
+                        Move-Item -LiteralPath ${'$'}old -Destination (${'$'}target + '.recovered') -Force
+                        Log ('kept old copy as ' + ${'$'}target + '.recovered')
+                    } else {
+                        Move-Item -LiteralPath ${'$'}old -Destination ${'$'}dst -Force
+                    }
+                }
+                if (-not (Test-Path -LiteralPath ${'$'}backup)) {
+                    Log 'nothing was swapped'
+                } elseif (@(Get-ChildItem -LiteralPath ${'$'}backup -Force).Count -eq 0) {
+                    Remove-Item -LiteralPath ${'$'}backup -Recurse -Force -ErrorAction SilentlyContinue
+                } else {
+                    Log ('backup kept at ' + ${'$'}backup)
+                }
+                Log 'rolled back'
             } finally {
                 Remove-Item -LiteralPath ${'$'}PSCommandPath -Force -ErrorAction SilentlyContinue
             }
-            """.trimIndent()
-        )
-        return script
+        """.trimIndent()
     }
 
     private fun startPowerShell(script: File, elevated: Boolean): Boolean {
