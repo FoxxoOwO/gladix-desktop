@@ -94,10 +94,17 @@ jobs:
           cd desktop/build/compose/binaries/main/app
           echo "packing $(pwd) -> $GITHUB_WORKSPACE/$ZIP (zip at: $(command -v zip || echo missing))"
           if [ "$RUNNER_OS" = Windows ]; then
-            pwsh -NoProfile -Command "Compress-Archive -Path (Join-Path (Get-Location) '*') -DestinationPath \$env:ZIP -Force"
+            pwsh -NoProfile -Command "Compress-Archive -Path (Join-Path (Get-Location) '*') -DestinationPath (Join-Path \$env:GITHUB_WORKSPACE \$env:ZIP) -Force"
           else
-            # -y keeps the symlinks jpackage writes into the bundle.
-            zip -ry "$GITHUB_WORKSPACE/$ZIP" .
+            # python's zipfile keeps the executable bits the launchers need.
+            python3 - "$GITHUB_WORKSPACE/$ZIP" <<'PY'
+          import os, sys, zipfile
+          with zipfile.ZipFile(sys.argv[1], "w", zipfile.ZIP_DEFLATED) as z:
+              for root, dirs, files in os.walk("."):
+                  for name in dirs + files:
+                      p = os.path.relpath(os.path.join(root, name), ".")
+                      z.write(p, p)
+          PY
           fi
           ls -l "$GITHUB_WORKSPACE/$ZIP"
 
