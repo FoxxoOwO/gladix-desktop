@@ -69,11 +69,21 @@ compose.desktop {
 
         jvmArgs += listOf("-Xmx1g", "--enable-native-access=ALL-UNNAMED")
 
+        // Installers are host-bound: an MSI cannot be built on Linux. Only the
+        // app image (createDistributable) is cross-platform, and CI ships that
+        // as a ZIP per OS, so the format list follows the build host.
+        val hostOs = System.getProperty("os.name").orEmpty().lowercase()
+        val hostFormats = when {
+            hostOs.contains("win") -> listOf(TargetFormat.Msi, TargetFormat.Exe)
+            hostOs.contains("mac") -> listOf(TargetFormat.Dmg)
+            else -> listOf(TargetFormat.Deb)
+        }
+
         nativeDistributions {
-            targetFormats(TargetFormat.Msi, TargetFormat.Exe)
+            targetFormats(*hostFormats.toTypedArray())
             packageName = "Gladix"
             packageVersion = "1.4.6"
-            description = "Gladix for Windows - Deezer music player"
+            description = "Gladix - Deezer music player"
             vendor = "Gladix Desktop"
 
             modules(
@@ -95,6 +105,12 @@ compose.desktop {
                 dirChooser = true
                 perUserInstall = true
                 upgradeUuid = "3f1c9b52-7c4e-4a2f-9d1e-6b8a2c5d4e71"
+            }
+
+            linux {
+                iconFile.set(project.file("icons/icon-512.png"))
+                shortcut = true
+                appCategory = "AudioVideo"
             }
         }
     }

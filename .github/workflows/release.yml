@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to publish, e.g. v1.4.4'
+        description: 'Existing tag to publish, e.g. v1.4.6'
         required: true
 
 permissions:
@@ -14,16 +14,57 @@ permissions:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
 
 jobs:
-  release:
-    name: Build and publish the Windows ZIP
-    runs-on: windows-latest
+  # The tag, the version in AppVersion and the packaged image must agree,
+  # otherwise the update check would offer a version this build is not.
+  version:
+    name: Check the tag against AppVersion
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+      tag: ${{ steps.read.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+      - id: read
+        shell: bash
+        run: |
+          ref='${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}'
+          version="${ref#v}"
+          file=desktop/src/main/kotlin/dev/gladix/desktop/core/AppVersion.kt
+          declared=$(grep -oP 'const val NAME = "\K[^"]+' "$file" || true)
+          [ -n "$declared" ] || { echo "AppVersion.NAME not found in $file" >&2; exit 1; }
+          [ "$declared" = "$version" ] || {
+            echo "Tag '$ref' says $version but AppVersion says $declared" >&2; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$ref" >> "$GITHUB_OUTPUT"
+          echo "Building Gladix $version from $ref"
+
+  # A jpackage app image can only be built on its own OS, so every platform
+  # gets its own runner and the same ZIP shape as Windows.
+  build:
+    name: Build ${{ matrix.label }}
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows-x64
+            launcher: Gladix/Gladix.exe
+          - os: ubuntu-latest
+            label: linux-x64
+            launcher: Gladix/bin/Gladix
+          - os: macos-latest
+            label: macos-arm64
+            launcher: Gladix.app/Contents/MacOS/Gladix
+          - os: macos-13
+            label: macos-x64
+            launcher: Gladix.app/Contents/MacOS/Gladix
+    steps:
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-java@v6
         with:
@@ -32,78 +73,94 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      # The tag, the version in AppVersion and the packaged image must agree,
-      # otherwise the update check would offer a version this build is not.
-      - name: Check the tag against AppVersion
-        shell: pwsh
-        run: |
-          $ref = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { '${{ inputs.tag }}' } else { '${{ github.ref_name }}' }
-          $version = $ref.TrimStart('v')
-          "VERSION=$version" >> $env:GITHUB_ENV
-          "TAG=$ref" >> $env:GITHUB_ENV
-
-          $file = 'desktop/src/main/kotlin/dev/gladix/desktop/core/AppVersion.kt'
-          $m = Select-String -Path $file -Pattern 'const val NAME = "([^"]+)"'
-          if (-not $m) { throw "AppVersion.NAME not found in $file" }
-          $declared = $m.Matches[0].Groups[1].Value
-          if ($declared -ne $version) {
-            throw "Tag '$ref' says $version but AppVersion says $declared"
-          }
-          Write-Host "Building Gladix $version from $ref"
-
       - name: Run the self-check
-        run: ./gradlew.bat :desktop:selfCheck --console=plain
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then ./gradlew.bat :desktop:selfCheck --console=plain
+          else sh ./gradlew :desktop:selfCheck --console=plain; fi
 
       - name: Build the app image
-        run: ./gradlew.bat :desktop:createDistributable --console=plain
-
-      - name: Pack the image and hash it
-        shell: pwsh
+        shell: bash
         run: |
-          $zip = "Gladix-$env:VERSION-windows-x64.zip"
-          $image = 'desktop/build/compose/binaries/main/app/Gladix'
-          if (-not (Test-Path (Join-Path $image 'Gladix.exe'))) {
-            throw "$image does not contain Gladix.exe"
-          }
-          Compress-Archive -Path $image -DestinationPath $zip -CompressionLevel Optimal
-          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-          "ZIP=$zip" >> $env:GITHUB_ENV
-          "SHA256=$hash" >> $env:GITHUB_ENV
-          $size = [math]::Round((Get-Item $zip).Length / 1MB, 1)
-          Write-Host "$zip - $size MB - SHA-256 $hash"
+          if [ "$RUNNER_OS" = Windows ]; then ./gradlew.bat :desktop:createDistributable --console=plain
+          else sh ./gradlew :desktop:createDistributable --console=plain; fi
 
-      # The committed notes carry the hash of whoever built the ZIP first; the
-      # published text has to name the artefact that is actually uploaded.
-      - name: Put the real hash into the release notes
-        shell: pwsh
+      - name: Pack the image
+        shell: bash
+        env:
+          ZIP: Gladix-${{ needs.version.outputs.version }}-${{ matrix.label }}.zip
         run: |
-          $notes = "release/notes-$env:VERSION.md"
-          if (-not (Test-Path $notes)) {
-            throw "Missing $notes - add the release notes to the release commit first."
-          }
-          $text = Get-Content $notes -Raw
-          if ($text -match '(?m)^SHA-256\s') {
-            # The placeholder in the notes is `<filled by CI>`; matching the
-            # whole line keeps its tail out of the published body.
-            $text = [regex]::Replace($text, '(?m)^SHA-256.*$', "SHA-256  $env:SHA256")
-          } else {
-            $text = $text.TrimEnd() + "`n`nSHA-256  $env:SHA256`n"
-          }
-          Set-Content -Path $notes -Value $text -NoNewline -Encoding utf8
-          "NOTES=$notes" >> $env:GITHUB_ENV
+          cd desktop/build/compose/binaries/main/app
+          if [ "$RUNNER_OS" = Windows ]; then
+            pwsh -NoProfile -Command "Compress-Archive -Path * -DestinationPath '$GITHUB_WORKSPACE/$env:ZIP'"
+          else
+            # -y keeps the symlinks jpackage writes into the bundle.
+            zip -qry "$GITHUB_WORKSPACE/$ZIP" .
+          fi
+          cd "$GITHUB_WORKSPACE"
+          ls -l "$ZIP"
 
-      - name: Publish the release
-        shell: pwsh
+      - name: Check the launcher is inside the ZIP
+        shell: bash
+        env:
+          ZIP: Gladix-${{ needs.version.outputs.version }}-${{ matrix.label }}.zip
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then
+            unzip -l "$ZIP" | grep -q 'Gladix/Gladix.exe' || { echo "no Gladix.exe in $ZIP" >&2; exit 1; }
+          else
+            unzip -l "$ZIP" | grep -q '${{ matrix.launcher }}' || {
+              echo "no ${{ matrix.launcher }} in $ZIP" >&2; exit 1; }
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.label }}
+          path: Gladix-${{ needs.version.outputs.version }}-${{ matrix.label }}.zip
+          if-no-files-found: error
+
+  publish:
+    name: Publish the release
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      # The committed notes carry a placeholder line; the published text has to
+      # name the artefacts that are actually uploaded.
+      - name: Put the real hashes into the release notes
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          notes="release/notes-$VERSION.md"
+          [ -f "$notes" ] || {
+            echo "Missing $notes - add the release notes to the release commit first." >&2; exit 1; }
+          (cd dist && sha256sum *.zip | sort -k2) > hashes.txt
+          awk 'BEGIN { while ((getline line < "hashes.txt") > 0) block = block line "\n" }
+               /^SHA-256/ { printf "SHA-256\n%s", block; next } { print }' "$notes" > notes.tmp
+          mv notes.tmp "$notes"
+          cat hashes.txt
+
+      - name: Upload the assets
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
-          gh release view $env:TAG --json tagName 2>$null | Out-Null
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Release $env:TAG exists - replacing its notes and asset"
-            gh release upload $env:TAG $env:ZIP --clobber
-            gh release edit $env:TAG --notes-file $env:NOTES
-          } else {
-            gh release create $env:TAG $env:ZIP --verify-tag --title "Gladix Desktop $env:VERSION" --notes-file $env:NOTES
-          }
-          if ($LASTEXITCODE -ne 0) { throw "Publishing $env:TAG failed" }
-          gh release view $env:TAG --json tagName,assets --jq '.tagName + " -> " + ([.assets[].name] | join(", "))'
+          notes="release/notes-$VERSION.md"
+          if gh release view "$TAG" --json tagName > /dev/null 2>&1; then
+            echo "Release $TAG exists - replacing its notes and assets"
+            gh release upload "$TAG" dist/*.zip --clobber
+            gh release edit "$TAG" --notes-file "$notes"
+          else
+            gh release create "$TAG" dist/*.zip --verify-tag \
+              --title "Gladix Desktop $VERSION" --notes-file "$notes"
+          fi
+          gh release view "$TAG" --json tagName,assets \
+            --jq '.tagName + " -> " + ([.assets[].name] | join(", "))'

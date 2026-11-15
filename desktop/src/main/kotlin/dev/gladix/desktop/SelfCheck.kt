@@ -49,6 +49,9 @@ fun main(args: Array<String>) {
         return
     }
     var failures = 0
+    // SMTC is a Windows API; on other systems the session only reports that it
+    // is unavailable, so the check below has nothing to assert there.
+    val isWindows = System.getProperty("os.name").orEmpty().lowercase().contains("win")
 
     fun check(name: String, block: () -> Unit) {
         val result = runCatching(block)
@@ -579,7 +582,7 @@ fun main(args: Array<String>) {
 
     // ------------------------------------------------------- media controls
 
-    check("Windows media session (SMTC) accepts metadata and artwork") {
+    if (isWindows) check("Windows media session (SMTC) accepts metadata and artwork") {
         val prefs = PrefsSettings(java.io.File(AppPaths.root, "selfcheck5.properties"))
         val player = PlayerController(
             DeezerClient(prefs),
