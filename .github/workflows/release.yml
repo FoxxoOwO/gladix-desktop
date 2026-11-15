@@ -60,7 +60,8 @@ jobs:
           - os: macos-latest
             label: macos-arm64
             launcher: Gladix.app/Contents/MacOS/Gladix
-          - os: macos-13
+          # macos-13 was retired in Dec 2025; macos-15-intel is the x86_64 label.
+          - os: macos-15-intel
             label: macos-x64
             launcher: Gladix.app/Contents/MacOS/Gladix
     steps:
@@ -91,14 +92,14 @@ jobs:
           ZIP: Gladix-${{ needs.version.outputs.version }}-${{ matrix.label }}.zip
         run: |
           cd desktop/build/compose/binaries/main/app
+          echo "packing $(pwd) -> $GITHUB_WORKSPACE/$ZIP (zip at: $(command -v zip || echo missing))"
           if [ "$RUNNER_OS" = Windows ]; then
-            pwsh -NoProfile -Command "Compress-Archive -Path * -DestinationPath '$GITHUB_WORKSPACE/$env:ZIP'"
+            pwsh -NoProfile -Command "Compress-Archive -Path (Join-Path (Get-Location) '*') -DestinationPath \$env:ZIP -Force"
           else
             # -y keeps the symlinks jpackage writes into the bundle.
-            zip -qry "$GITHUB_WORKSPACE/$ZIP" .
+            zip -ry "$GITHUB_WORKSPACE/$ZIP" .
           fi
-          cd "$GITHUB_WORKSPACE"
-          ls -l "$ZIP"
+          ls -l "$GITHUB_WORKSPACE/$ZIP"
 
       - name: Check the launcher is inside the ZIP
         shell: bash
