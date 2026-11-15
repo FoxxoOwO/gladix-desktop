@@ -21,16 +21,16 @@ jobs:
     name: Build and publish the Windows ZIP
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       # The tag, the version in AppVersion and the packaged image must agree,
       # otherwise the update check would offer a version this build is not.
