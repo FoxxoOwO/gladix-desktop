@@ -16,7 +16,7 @@ Android UI with a Compose Desktop UI.
 
 ## English
 
-Gladix Desktop is a native Windows desktop app that plays music from Deezer. There is
+Gladix Desktop is a native desktop app for Windows, Linux and macOS that plays music from Deezer. There is
 no browser or web view involved: it is a regular Win32 application with its own window
 that talks to the Deezer API through the very same code the Android version uses. The
 interface ships in Czech and English, switchable in Settings.
@@ -144,6 +144,8 @@ java desktop\icons\IconGenerator.java
 ### Requirements
 
 - Windows 10/11 (x64)
+- Linux with GTK 3 (x64)
+- macOS 11 or newer (arm64 or x64)
 - JDK 17 or newer to build (tested on JDK 24; the app itself bundles its own runtime)
 
 ### Build and run
@@ -339,7 +341,7 @@ of Deezer SA; this project is not affiliated with it.
 
 ## Česky
 
-Gladix Desktop je nativní desktopová aplikace pro Windows, která přehrává hudbu z Deezeru.
+Gladix Desktop je nativní desktopová aplikace pro Windows, Linux a macOS, která přehrává hudbu z Deezeru.
 Nepoužívá prohlížeč ani webové rozhraní — je to klasická Win32 aplikace s vlastním oknem,
 která komunikuje přímo s Deezer API přes stejný kód, jaký používá Android verze.
 Rozhraní je česky i anglicky, jazyk se přepíná v nastavení.
@@ -457,6 +459,8 @@ stejnému API jako zbytek, ale neprošly ruční zkouškou s živým účtem.
 ### Požadavky
 
 - Windows 10/11 (x64)
+- Linux s GTK 3 (x64)
+- macOS 11 nebo novější (arm64 nebo x64)
 - JDK 17 nebo novější pro sestavení (testováno na JDK 24; aplikace samotná si nese vlastní runtime)
 
 ### Sestavení a spuštění
