@@ -174,7 +174,25 @@ gradlew.bat :desktop:createDistributable
 
 Result: `desktop\build\compose\binaries\main\app\Gladix\Gladix.exe` — a self-contained
 folder with its own JVM runtime, so no JDK installation is needed. For distribution,
-zip that folder (which is what `release\Gladix-1.1.3-windows-x64.zip` does).
+zip that folder as `release\Gladix-<version>-windows-x64.zip`.
+
+### Cutting a release
+
+Releases are published by CI, not by hand:
+
+1. Bump the version in `AppVersion.kt`, `build.gradle.kts` (root `version` and
+   `packageVersion`) and the download links in this README, then write
+   `release\notes-<version>.md`.
+2. Commit as `chore(release): v<version>` and merge it into `master`.
+3. `git tag v<version>` and `git push origin v<version>` — `.github/workflows/release.yml`
+   then builds the image on `windows-latest`, packs the ZIP, replaces the `SHA-256` line
+   in the notes with the hash of the artifact it just built, and publishes the GitHub
+   release.
+
+`ci.yml` runs `selfCheck` on every push and pull request, so a broken build shows up
+before a tag does. The release workflow refuses to publish when the tag and
+`AppVersion.NAME` disagree, and re-running it for an existing tag replaces the asset and
+the notes instead of failing.
 
 On first launch the app creates a shortcut at
 `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Gladix.lnk`. That is not clutter:
@@ -467,7 +485,24 @@ gradlew.bat :desktop:createDistributable
 
 Výsledek: `desktop\build\compose\binaries\main\app\Gladix\Gladix.exe` — samostatná
 složka s vlastním JVM runtime, běží bez instalace JDK. Pro distribuci zabalte tuto
-složku do ZIPu (to dělá `release\Gladix-1.1.3-windows-x64.zip`).
+složku do ZIPu jako `release\Gladix-<verze>-windows-x64.zip`.
+
+### Vydání releasu
+
+Release publikuje CI, ne ručně:
+
+1. Zvyš verzi v `AppVersion.kt`, v `build.gradle.kts` (root `version` a
+   `packageVersion`) a v odkazech na stažení v tomto README, a napiš
+   `release\notes-<verze>.md`.
+2. Commitni jako `chore(release): v<verze>` a sluč do `master`.
+3. `git tag v<verze>` a `git push origin v<verze>` — `.github/workflows/release.yml`
+   pak na `windows-latest` sestaví image, zabalí ZIP, nahradí řádek `SHA-256`
+   v poznámkách hashem právě vytvořeného artefaktu a publikuje GitHub release.
+
+`ci.yml` pouští `selfCheck` na každý push i pull request, takže rozbitý build se
+projeví dřív než u tagu. Release workflow odmítne publikovat, když tag a
+`AppVersion.NAME` nesouhlasí, a opakované spuštění pro existující tag nahradí asset
+i poznámky místo chyby.
 
 Při prvním spuštění si aplikace vytvoří zástupce
 `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Gladix.lnk`. Není to nepořádek —
