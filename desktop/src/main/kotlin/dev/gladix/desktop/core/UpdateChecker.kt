@@ -115,7 +115,7 @@ class UpdateChecker(
             val tag = release.string("tag_name")
             latestVersion = tag?.trimStart('v')
             releaseNotes = release.string("body")
-            downloadUrl = pickAsset(release["assets"] as? JsonArray)
+            downloadUrl = pickReleaseAsset(release["assets"] as? JsonArray)
             state = if (hasUpdate) State.Available else State.UpToDate
             // Fully automatic path: while the switch is on, fetch and unpack
             // the release right away so the user only confirms the restart.
@@ -231,16 +231,39 @@ class UpdateChecker(
         runCatching { java.awt.Desktop.getDesktop().open(dir) }
     }
 
-    private fun pickAsset(assets: JsonArray?): String? {
-        if (assets == null) return null
-        val entries = assets.mapNotNull { it as? JsonObject }
-        val named = entries.firstOrNull { (it.string("name") ?: "").endsWith("-windows-x64.zip") }
-        return named?.string("browser_download_url")
-            ?: entries.firstOrNull()?.string("browser_download_url")
-    }
-
     private fun JsonObject.string(key: String): String? =
         (this[key] as? JsonPrimitive)?.contentOrNull
+}
+
+/**
+ * Picks the release archive for this platform. Assets are named
+ * `Gladix-<version>-<platform>.zip`, so the platform token has to appear in the
+ * name; no fallback, because a wrong-OS download is worse than none.
+ */
+internal fun pickReleaseAsset(
+    assets: JsonArray?,
+    os: String = System.getProperty("os.name").orEmpty(),
+    arch: String = System.getProperty("os.arch").orEmpty()
+): String? {
+    if (assets == null) return null
+    val token = platformToken(os, arch) ?: return null
+    val entry = assets.mapNotNull { it as? JsonObject }.firstOrNull {
+        ((it["name"] as? JsonPrimitive)?.contentOrNull ?: "").contains(token)
+    } ?: return null
+    return (entry["browser_download_url"] as? JsonPrimitive)?.contentOrNull
+}
+
+/** `-windows`, `-linux`, `-macos-arm64` or `-macos-x64`. */
+internal fun platformToken(os: String, arch: String): String? {
+    val name = os.lowercase()
+    val cpu = arch.lowercase()
+    return when {
+        name.contains("win") -> "-windows"
+        name.contains("mac") || name.contains("darwin") ->
+            if (cpu.contains("arm") || cpu.contains("aarch64")) "-macos-arm64" else "-macos-x64"
+        name.contains("linux") -> "-linux"
+        else -> null
+    }
 }
 
 /**

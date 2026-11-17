@@ -409,6 +409,24 @@ fun main(args: Array<String>) {
         if (cmp("2.0.0", "1.99.99") <= 0) error("major bump wins")
     }
 
+    check("release assets are picked for the right platform") {
+        val assets = AppJson.parseToJsonElement(
+            """[{"name":"Gladix-1.4.6-linux-x64.zip","browser_download_url":"u-linux"},
+                 {"name":"Gladix-1.4.6-macos-arm64.zip","browser_download_url":"u-mac-arm"},
+                 {"name":"Gladix-1.4.6-macos-x64.zip","browser_download_url":"u-mac-x64"},
+                 {"name":"Gladix-1.4.6-windows-x64.zip","browser_download_url":"u-win"}]"""
+        ) as kotlinx.serialization.json.JsonArray
+
+        fun pick(os: String, arch: String) = dev.gladix.desktop.core.pickReleaseAsset(assets, os, arch)
+
+        if (pick("Windows 11", "amd64") != "u-win") error("windows picked the wrong asset")
+        if (pick("Linux", "amd64") != "u-linux") error("linux picked the wrong asset")
+        if (pick("Mac OS X", "aarch64") != "u-mac-arm") error("apple silicon picked the wrong asset")
+        if (pick("Mac OS X", "x86_64") != "u-mac-x64") error("intel mac picked the wrong asset")
+        if (pick("FreeBSD", "amd64") != null) error("an unknown platform should pick nothing")
+        println("      windows=u-win linux=u-linux macos-arm=u-mac-arm macos-x64=u-mac-x64")
+    }
+
     // ----------------------------------------------------------------- audio
 
     check("javax.sound knows the PCM format and registers decoders") {
