@@ -22,10 +22,10 @@ import kotlin.system.exitProcess
  * Exercises the parts of the app that talk to Deezer for real: a whole album,
  * its lyrics and a radio queue built from it.
  *
- * This needs the account that is already signed in on this machine
- * (`%APPDATA%/Gladix/user.json`), so it is meant for a manual run and never for
- * CI. Every network call has a timeout: a hung gateway must fail loudly instead
- * of parking the build.
+ * This needs a signed-in account: the one already on this machine
+ * (`%APPDATA%/Gladix/user.json`) or, in CI, the JSON passed in
+ * `GLADIX_USER_JSON`. Every network call has a timeout: a hung gateway must fail
+ * loudly instead of parking the build.
  */
 private var failures = 0
 
@@ -63,11 +63,17 @@ private fun signature(file: File): String {
 }
 
 fun main() = runBlocking {
+    // CI has no profile, so the account arrives as a secret instead.
+    val seeded = System.getenv("GLADIX_USER_JSON").orEmpty().isNotBlank()
+    if (seeded) AppPaths.userFile.writeText(System.getenv("GLADIX_USER_JSON"))
+
     val settings = PrefsSettings(AppPaths.settingsFile)
     val client = DeezerClient(settings)
     client.start()
     if (!client.isLoggedIn()) {
         println("liveCheck skipped: no signed-in account in ${AppPaths.userFile}")
+        // A missing or expired secret must not look like a green run.
+        if (seeded) exitProcess(1)
         return@runBlocking
     }
     println("account: ${client.user?.name} (${client.user?.id})")
