@@ -7,16 +7,31 @@ import java.util.zip.ZipFile
 /**
  * Finds the folder of the jpackage app image that is currently running.
  *
- * A packaged Gladix consists of `Gladix.exe` plus an `app` folder next to it.
- * When the code runs from Gradle or an IDE there is no such image, so every
- * lookup returns null and the update simply stays a downloaded ZIP.
+ * The layout differs per platform: `Gladix.exe` plus `app/` on Windows, `bin/`
+ * and `lib/` on Linux, `Contents/MacOS/` inside a `.app` bundle on macOS. When
+ * the code runs from Gradle or an IDE there is no such image, so every lookup
+ * returns null and the update simply stays a downloaded ZIP.
  */
 object InstallLocation {
 
     private const val PROP = "jpackage.app-path"
 
     val launcher: File? = detect()
-    val root: File? = launcher?.parentFile?.takeIf { it.isDirectory }
+    val root: File? = launcher?.let(::rootOf)?.takeIf { it.isDirectory }
+
+    /** Top folder of the image that [launcher] belongs to. */
+    private fun rootOf(launcher: File): File? {
+        val parent = launcher.parentFile ?: return null
+        return when {
+            launcher.name.endsWith(".exe", ignoreCase = true) -> parent
+            // <Name>.app/Contents/MacOS/<launcher>
+            parent.name == "MacOS" && parent.parentFile?.name == "Contents" ->
+                parent.parentFile?.parentFile
+            // <root>/bin/<launcher>
+            parent.name == "bin" -> parent.parentFile
+            else -> parent
+        }
+    }
 
     private fun detect(): File? {
         // jpackage sets this for every app image launcher; it is the most
@@ -41,9 +56,15 @@ object InstallLocation {
         return image?.takeIf { looksPackaged(File(it, "Gladix.exe")) }
     }
 
-    private fun looksPackaged(exe: File): Boolean =
-        exe.isFile && exe.name.endsWith(".exe", ignoreCase = true) &&
-            exe.parentFile?.let { File(it, "app").isDirectory } == true
+    private fun looksPackaged(exe: File): Boolean {
+        if (!exe.isFile) return false
+        val root = rootOf(exe) ?: return false
+        return when {
+            exe.name.endsWith(".exe", ignoreCase = true) -> File(root, "app").isDirectory
+            root.name.endsWith(".app") -> File(root, "Contents/MacOS").isDirectory
+            else -> File(root, "lib").isDirectory && File(root, "bin").isDirectory
+        }
+    }
 }
 
 /**
@@ -61,8 +82,18 @@ class SelfUpdater(private val installRoot: File? = InstallLocation.root) {
     /** Folder holding downloaded ZIPs and the unpacked staging image. */
     val stagingRoot: File = File(AppPaths.root, "updates")
 
+    private val windows: Boolean =
+        System.getProperty("os.name").orEmpty().lowercase().contains("win")
+
+    /** Launcher of an app image, whichever platform unpacked it. */
+    private fun launcherOf(root: File): File? = sequenceOf(
+        File(root, "Gladix.exe"),
+        File(root, "Contents/MacOS/Gladix"),
+        File(root, "bin/Gladix")
+    ).firstOrNull { it.isFile }
+
     val isSupported: Boolean
-        get() = installRoot?.let { File(it, "Gladix.exe").isFile && File(it, "app").isDirectory } == true
+        get() = installRoot?.let { launcherOf(it) != null } == true
 
     /** Extracts [zip] and returns the app image folder found inside it. */
     fun stage(zip: File): File {
@@ -94,10 +125,11 @@ class SelfUpdater(private val installRoot: File? = InstallLocation.root) {
         }
 
         val image = findImage(destination)
-        if (!File(image, "Gladix.exe").isFile) {
+        if (launcherOf(image) == null) {
             image.deleteRecursively()
-            throw IOException("Archive does not contain Gladix.exe")
+            throw IOException("Archive does not contain a Gladix launcher")
         }
+        markExecutables(image)
         return image
     }
 
@@ -111,10 +143,14 @@ class SelfUpdater(private val installRoot: File? = InstallLocation.root) {
      */
     fun apply(stagedImage: File, restart: Boolean): Boolean {
         val root = installRoot ?: return false
-        if (!File(stagedImage, "Gladix.exe").isFile) return false
-        val script = writeScript(stagedImage, root, restart)
-        val elevated = !canWrite(root)
-        return runCatching { startPowerShell(script, elevated) }.getOrDefault(false)
+        if (launcherOf(stagedImage) == null) return false
+        return if (windows) {
+            val script = writeScript(stagedImage, root, restart)
+            val elevated = !canWrite(root)
+            runCatching { startPowerShell(script, elevated) }.getOrDefault(false)
+        } else {
+            runCatching { startShell(stagedImage, root, restart) }.getOrDefault(false)
+        }
     }
 
     /**
@@ -133,11 +169,26 @@ class SelfUpdater(private val installRoot: File? = InstallLocation.root) {
     }
 
     private fun findImage(root: File): File {
-        if (File(root, "app").isDirectory) return root
+        if (launcherOf(root) != null) return root
         val children = root.listFiles()?.filter { it.isDirectory }.orEmpty()
-        children.firstOrNull { File(it, "Gladix.exe").isFile }?.let { return it }
+        // macOS archives hold only the bundle, Windows and Linux one folder.
+        children.firstOrNull { launcherOf(it) != null }?.let { return it }
         children.firstOrNull { File(it, "app").isDirectory }?.let { return it }
         return root
+    }
+
+    /**
+     * java.util.zip drops POSIX modes, so the launcher and the bundled runtime
+     * binaries are made executable again after extraction.
+     */
+    private fun markExecutables(image: File) {
+        if (windows) return
+        image.walkTopDown().filter { it.isFile }.forEach { file ->
+            val path = file.path.replace('\\', '/')
+            if (file.name == "Gladix" || path.contains("/bin/") || path.contains("/MacOS/")) {
+                runCatching { file.setExecutable(true, false) }
+            }
+        }
     }
 
     private fun canWrite(dir: File): Boolean = runCatching {
@@ -263,6 +314,68 @@ class SelfUpdater(private val installRoot: File? = InstallLocation.root) {
                 Remove-Item -LiteralPath ${'$'}PSCommandPath -Force -ErrorAction SilentlyContinue
             }
         """.trimIndent()
+    }
+
+    /**
+     * Unix swap: the running process only holds unlinked files, so a shell
+     * script can move the old image aside, move the staged one in and restart.
+     * Both moves are renames, and a failed copy restores the backup.
+     */
+    private fun startShell(stagedImage: File, root: File, restart: Boolean): Boolean {
+        // Renaming the image needs write access to its parent, not to itself.
+        val parent = root.parentFile ?: return false
+        if (!canWrite(parent)) return false
+        val script = File(stagingRoot, "apply.sh")
+        script.writeText(
+            renderShScript(
+                src = stagedImage.absolutePath,
+                dst = root.absolutePath,
+                restart = restart,
+                pid = ProcessHandle.current().pid(),
+                log = File(stagingRoot, "apply.log").absolutePath
+            )
+        )
+        ProcessBuilder("nohup", "sh", script.absolutePath)
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+            .redirectError(ProcessBuilder.Redirect.DISCARD)
+            .start()
+        return true
+    }
+
+    /** The Unix swap script; kept separate so tests can render and inspect it. */
+    internal fun renderShScript(src: String, dst: String, restart: Boolean, pid: Long, log: String): String {
+        fun sh(value: String) = value.replace("'", "'\\''")
+        return """
+            #!/bin/sh
+            # Waits for Gladix to exit, then swaps the app image in place.
+            src='${sh(src)}'
+            dst='${sh(dst)}'
+            log='${sh(log)}'
+            restart=${if (restart) 1 else 0}
+            pid=$pid
+
+            while kill -0 "${'$'}pid" 2>/dev/null; do sleep 0.3; done
+            backup="${'$'}dst.old-${'$'}${'$'}"
+            mv "${'$'}dst" "${'$'}backup" 2>>"${'$'}log" || exit 1
+            if ! mv "${'$'}src" "${'$'}dst" 2>>"${'$'}log"; then
+                if cp -R "${'$'}src" "${'$'}dst" 2>>"${'$'}log"; then
+                    rm -rf "${'$'}src"
+                else
+                    mv "${'$'}backup" "${'$'}dst"
+                    echo 'rolled back' >>"${'$'}log"
+                    exit 1
+                fi
+            fi
+            rm -rf "${'$'}backup"
+            echo 'swapped' >>"${'$'}log"
+            if [ "${'$'}restart" = "1" ]; then
+                case "${'$'}dst" in
+                    *.app) open "${'$'}dst" ;;
+                    *) nohup "${'$'}dst/bin/Gladix" >/dev/null 2>&1 & ;;
+                esac
+            fi
+            rm -f "${'$'}0"
+        """.trimIndent() + "\n"
     }
 
     private fun startPowerShell(script: File, elevated: Boolean): Boolean {

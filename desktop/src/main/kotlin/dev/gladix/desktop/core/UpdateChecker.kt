@@ -17,7 +17,8 @@ import kotlinx.serialization.json.contentOrNull
 import java.io.File
 
 /**
- * Checks GitHub Releases for a newer build and downloads its Windows zip.
+ * Checks GitHub Releases for a newer build and downloads the zip of this
+ * platform.
  *
  * Everything is optional: without network access, without a signed-in GitHub
  * account (the anonymous API is rate limited but sufficient) or on a build with
@@ -124,9 +125,8 @@ class UpdateChecker(
             state = readyState(hasUpdate, latestVersion, stagedVersion, downloadedVersion)
             // Fully automatic path: while the switch is on, fetch and unpack
             // the release right away so the user only confirms the restart.
-            // An already prepared update is not downloaded twice; a platform
-            // that cannot swap the image itself (Linux, macOS) is not made to
-            // pull 100 MB on its own — the button stays manual there.
+            // An already prepared update is not downloaded twice, and a build
+            // that cannot swap its image (run from Gradle) keeps it manual.
             if (
                 hasUpdate && autoEnabled && selfUpdater.isSupported &&
                 downloadUrl != null && state == State.Available
