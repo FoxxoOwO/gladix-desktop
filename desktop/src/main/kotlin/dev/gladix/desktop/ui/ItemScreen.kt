@@ -53,6 +53,7 @@ import dev.brahmkshatriya.echo.common.models.Artist
 import dev.brahmkshatriya.echo.common.models.EchoMediaItem
 import dev.brahmkshatriya.echo.common.models.ImageHolder
 import dev.brahmkshatriya.echo.common.models.Playlist
+import dev.brahmkshatriya.echo.common.models.Radio
 import dev.brahmkshatriya.echo.common.models.Track
 import dev.gladix.desktop.core.Images
 import dev.gladix.desktop.core.allItems
@@ -101,6 +102,16 @@ fun ItemScreen(state: AppState, item: EchoMediaItem) {
 
         is Track -> {
             LaunchedEffect(item.id) { state.ctx.player.playNow(item) }
+            EmptyBox(UiStrings.s.playingNow(item.title))
+        }
+
+        // A radio, Flow among them, has no page of its own: it is its queue.
+        is Radio -> {
+            LaunchedEffect(item.id) {
+                val tracks = runCatching { state.ctx.client.radioTracks(item) }.getOrNull()
+                if (tracks.isNullOrEmpty()) state.showToast(UiStrings.s.radioUnavailable)
+                else state.ctx.player.playList(tracks, 0, item)
+            }
             EmptyBox(UiStrings.s.playingNow(item.title))
         }
 

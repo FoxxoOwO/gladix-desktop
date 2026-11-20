@@ -135,6 +135,12 @@ fun main() = runBlocking {
         println("  first: ${tracks?.firstOrNull()?.title}")
     }
 
+    // 5. Flow: the account's personal stream, no seed track needed.
+    step("flow")
+    val flow = probe("flow loads") { client.flowTracks() }
+    check("flow has tracks", !flow.isNullOrEmpty(), "${flow?.size ?: 0} tracks")
+    println("  first: ${flow?.firstOrNull()?.title}")
+
     if (failures > 0) {
         println("liveCheck FAILED ($failures)")
         exitProcess(1)
