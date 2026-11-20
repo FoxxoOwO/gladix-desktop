@@ -129,7 +129,7 @@ fun LoginScreen(state: AppState) {
                         label = { Text(UiStrings.s.arlCookie) },
                         placeholder = { Text(UiStrings.s.arlPlaceholder) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().typingField()
                     )
                     Text(
                         text = UiStrings.s.arlHint,
@@ -144,7 +144,7 @@ fun LoginScreen(state: AppState) {
                         label = { Text(UiStrings.s.email) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().typingField()
                     )
                     Spacer(Modifier.height(10.dp))
                     OutlinedTextField(
@@ -154,7 +154,7 @@ fun LoginScreen(state: AppState) {
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().typingField()
                     )
                     Text(
                         text = UiStrings.s.twoFactorHint,

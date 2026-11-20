@@ -32,6 +32,7 @@ import dev.gladix.desktop.core.player.SavedQueue
 import dev.gladix.desktop.core.player.StreamQuality
 import dev.gladix.desktop.ui.SortField
 import dev.gladix.desktop.ui.SortSpec
+import dev.gladix.desktop.ui.TypingFocus
 import dev.gladix.desktop.ui.flatTrackRun
 import dev.gladix.desktop.ui.sortShelves
 import dev.gladix.desktop.ui.text.UiStrings
@@ -505,6 +506,24 @@ fun main(args: Array<String>) {
         val quoted = SelfUpdater(linux).renderShScript("/tmp/it's/src", "/tmp/dst", false, 1, "/tmp/log")
         if (!quoted.contains("/tmp/it'\\''s/src")) error("an apostrophe in the path was not escaped")
         base.deleteRecursively()
+    }
+
+    check("typing in a text field keeps the space bar out of playback") {
+        val typing = TypingFocus()
+        if (typing.active) error("nothing is focused yet")
+        typing.update(true)
+        if (!typing.active) error("a focused field should block the shortcut")
+        // Focus moving to another field: the old one leaves before the new one
+        // arrives, so the gap is one callback wide and no key can land there.
+        typing.update(false)
+        typing.update(true)
+        if (!typing.active) error("moving focus between fields lost the state")
+        typing.update(false)
+        if (typing.active) error("the last field left, yet typing stays active")
+        // A spurious release must not drive the count negative.
+        typing.update(false)
+        typing.update(true)
+        if (!typing.active) error("an extra release broke the count")
     }
 
     check("the download folder follows the setting") {

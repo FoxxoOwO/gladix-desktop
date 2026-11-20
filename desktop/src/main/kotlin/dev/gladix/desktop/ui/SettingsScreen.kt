@@ -223,7 +223,7 @@ fun SettingsScreen(state: AppState) {
                     },
                     label = { Text(strings.countryLabel) },
                     singleLine = true,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).typingField()
                 )
                 OutlinedTextField(
                     value = language,
@@ -233,7 +233,7 @@ fun SettingsScreen(state: AppState) {
                     },
                     label = { Text(strings.deezerLanguageLabel) },
                     singleLine = true,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).typingField()
                 )
             }
             Spacer(Modifier.height(10.dp))
@@ -245,7 +245,7 @@ fun SettingsScreen(state: AppState) {
                 },
                 label = { Text(strings.proxyLabel) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().typingField()
             )
             Text(
                 strings.changesAfterRestart,
@@ -376,7 +376,7 @@ fun SettingsScreen(state: AppState) {
                 },
                 label = { Text(strings.discordClientId) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().typingField()
             )
             Text(
                 strings.discordClientIdNote,
