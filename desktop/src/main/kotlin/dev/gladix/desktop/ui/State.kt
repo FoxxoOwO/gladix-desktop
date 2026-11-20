@@ -219,6 +219,20 @@ class AppState(val ctx: AppContext) {
     fun showToast(message: String) {
         toast = message
     }
+
+    /**
+     * Runs a write such as a like toggle. A failure undoes the optimistic UI
+     * change and says why, instead of leaving the button lying.
+     */
+    suspend fun write(revert: () -> Unit = {}, block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (t: Throwable) {
+            if (t is kotlinx.coroutines.CancellationException) throw t
+            revert()
+            showToast(UiStrings.s.error(t.message))
+        }
+    }
 }
 
 fun itemTitle(item: EchoMediaItem): String = when (item) {

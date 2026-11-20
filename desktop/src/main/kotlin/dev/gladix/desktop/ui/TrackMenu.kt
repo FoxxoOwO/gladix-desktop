@@ -131,10 +131,12 @@ fun TrackMenuButton(
                 val next = !saved
                 saved = next
                 scope.launch {
-                    runCatching { state.ctx.client.setSaved(track, next) }
-                    state.showToast(
-                        if (next) strings.savedToLibrary else strings.removedFromLibrary
-                    )
+                    state.write({ saved = !next }) {
+                        state.ctx.client.setSaved(track, next)
+                        state.showToast(
+                            if (next) strings.savedToLibrary else strings.removedFromLibrary
+                        )
+                    }
                 }
             }
             MenuItem(
@@ -144,7 +146,7 @@ fun TrackMenuButton(
                 open = false
                 val next = !liked
                 liked = next
-                scope.launch { runCatching { state.ctx.client.setLiked(track, next) } }
+                scope.launch { state.write({ liked = !next }) { state.ctx.client.setLiked(track, next) } }
             }
             MenuItem(Icons.AutoMirrored.Rounded.PlaylistAdd, strings.saveToPlaylist) {
                 open = false

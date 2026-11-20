@@ -154,11 +154,13 @@ private fun ArtistScreen(state: AppState, artist: Artist) {
                         scope.launch {
                             val next = !following
                             following = next
-                            runCatching { state.ctx.client.setFollowed(artist, next) }
-                            state.showToast(
-                                if (next) UiStrings.s.nowFollowing(shown.name)
-                                else UiStrings.s.stoppedFollowing(shown.name)
-                            )
+                            state.write({ following = !next }) {
+                                state.ctx.client.setFollowed(artist, next)
+                                state.showToast(
+                                    if (next) UiStrings.s.nowFollowing(shown.name)
+                                    else UiStrings.s.stoppedFollowing(shown.name)
+                                )
+                            }
                         }
                     }) {
                         Icon(
@@ -253,7 +255,7 @@ private fun <T> CollectionScreen(
                         scope.launch {
                             val next = !liked
                             liked = next
-                            runCatching { state.ctx.client.setLiked(item, next) }
+                            state.write({ liked = !next }) { state.ctx.client.setLiked(item, next) }
                         }
                     }) {
                         Icon(
@@ -268,10 +270,12 @@ private fun <T> CollectionScreen(
                         scope.launch {
                             val next = !saved
                             saved = next
-                            runCatching { state.ctx.client.setSaved(item, next) }
-                            state.showToast(
-                                if (next) UiStrings.s.savedToLibrary else UiStrings.s.removedFromLibrary
-                            )
+                            state.write({ saved = !next }) {
+                                state.ctx.client.setSaved(item, next)
+                                state.showToast(
+                                    if (next) UiStrings.s.savedToLibrary else UiStrings.s.removedFromLibrary
+                                )
+                            }
                         }
                     }) {
                         Icon(
