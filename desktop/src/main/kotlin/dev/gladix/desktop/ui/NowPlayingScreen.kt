@@ -297,7 +297,7 @@ private fun LikeButton(state: AppState, track: Track) {
         scope.launch {
             val next = !liked
             liked = next
-            runCatching { state.ctx.client.setLiked(track, next) }
+            state.write({ liked = !next }) { state.ctx.client.setLiked(track, next) }
         }
     }) {
         Icon(

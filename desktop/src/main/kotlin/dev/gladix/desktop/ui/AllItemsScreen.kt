@@ -28,6 +28,8 @@ import dev.brahmkshatriya.echo.common.models.Shelf
 import dev.gladix.desktop.ui.text.UiStrings
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 /** Rows from the end at which the next page is requested, so scrolling never stalls. */
 private const val PREFETCH_DISTANCE = 12
@@ -70,6 +72,8 @@ private fun AlbumsGrid(state: AppState, feed: Feed<Shelf>) {
     // above, so switching to another shelf's page starts from a clean state.
     val pager = remember(feed) { AllItemsPager(feed) }
 
+    val scope = rememberCoroutineScope()
+
     suspend fun loadNext() {
         if (loading || finished) return
         loading = true
@@ -105,7 +109,7 @@ private fun AlbumsGrid(state: AppState, feed: Feed<Shelf>) {
 
     when {
         items.isEmpty() && loading -> LoadingBox()
-        items.isEmpty() && error != null -> ErrorBox(error!!) { }
+        items.isEmpty() && error != null -> ErrorBox(error!!) { scope.launch { loadNext() } }
         items.isEmpty() && finished -> EmptyBox(UiStrings.s.nothingToShow)
         else -> LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 168.dp),

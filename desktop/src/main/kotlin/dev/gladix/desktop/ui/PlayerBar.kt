@@ -174,7 +174,9 @@ fun PlayerBar(
                             scope.launch {
                                 val next = !liked.value
                                 liked.value = next
-                                runCatching { state.ctx.client.setLiked(track, next) }
+                                state.write({ liked.value = !next }) {
+                                    state.ctx.client.setLiked(track, next)
+                                }
                             }
                         }) {
                             Icon(
