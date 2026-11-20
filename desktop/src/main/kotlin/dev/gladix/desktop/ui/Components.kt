@@ -37,9 +37,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -146,6 +150,29 @@ fun ErrorBox(message: String, onRetry: (() -> Unit)? = null) {
             }
         }
     }
+}
+
+/**
+ * Counts the text fields that hold the focus. Window shortcuts ask it first:
+ * otherwise a space typed into search pauses the music.
+ */
+class TypingFocus {
+    private var focused by mutableStateOf(0)
+    val active: Boolean get() = focused > 0
+
+    /** Fields report both edges; a focus move between two fields stays active. */
+    fun update(isFocused: Boolean) {
+        focused = (focused + if (isFocused) 1 else -1).coerceAtLeast(0)
+    }
+}
+
+val LocalTypingFocus = staticCompositionLocalOf { TypingFocus() }
+
+/** Makes a text field report its focus to [LocalTypingFocus]. */
+@Composable
+fun Modifier.typingField(): Modifier {
+    val typing = LocalTypingFocus.current
+    return onFocusChanged { typing.update(it.isFocused) }
 }
 
 @Composable

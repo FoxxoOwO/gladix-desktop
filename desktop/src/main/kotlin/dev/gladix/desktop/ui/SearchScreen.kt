@@ -71,6 +71,7 @@ fun SearchScreen(state: AppState) {
             }),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp)
                 .focusRequester(focusRequester)
+                .typingField()
         )
 
         if (recent.isNotEmpty() && submitted.isBlank()) {

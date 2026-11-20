@@ -325,7 +325,7 @@ fun SaveToPlaylistDialog(state: AppState, track: Track, onDismiss: () -> Unit) {
                         onValueChange = { name = it },
                         label = { Text(strings.playlistName) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().typingField()
                     )
                 } else {
                     TextButton(onClick = { creating = true }) {

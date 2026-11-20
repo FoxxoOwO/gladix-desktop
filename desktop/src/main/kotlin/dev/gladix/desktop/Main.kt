@@ -1,6 +1,7 @@
 package dev.gladix.desktop
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -25,6 +26,8 @@ import dev.gladix.desktop.core.platform.WindowChrome
 import dev.gladix.desktop.ui.App
 import dev.gladix.desktop.ui.AppState
 import dev.gladix.desktop.ui.GladixTheme
+import dev.gladix.desktop.ui.LocalTypingFocus
+import dev.gladix.desktop.ui.TypingFocus
 import dev.gladix.desktop.ui.text.Lang
 import dev.gladix.desktop.ui.text.UiStrings
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +56,8 @@ private fun launchUi() = application {
     }
 
     val state = remember { AppState(context) }
+    // Set while a text field has the focus, so Space types instead of pausing.
+    val typing = remember { TypingFocus() }
 
     // An update only installs itself once this process is gone, so it needs a
     // way to close the window from the settings screen.
@@ -65,9 +70,10 @@ private fun launchUi() = application {
 
     Window(
         onKeyEvent = { event ->
-            // Window level, not preview: a focused text field gets Space first, so
-            // typing in the search box does not toggle playback.
-            event.type == KeyEventType.KeyDown && state.handleShortcut(
+            // Window level, not preview: a focused text field gets the key first,
+            // but Compose still bubbles the character here, so the fields report
+            // their focus and typing never toggles playback.
+            event.type == KeyEventType.KeyDown && !typing.active && state.handleShortcut(
                 event.key,
                 event.isCtrlPressed,
                 event.isShiftPressed,
@@ -92,8 +98,10 @@ private fun launchUi() = application {
         val dark = ThemePreference.isDark(state.theme, isSystemInDarkTheme())
         LaunchedEffect(dark) { WindowChrome.applyFrame(window, dark, "Gladix") }
         GladixTheme(useDark = dark) {
-            if (ready) {
-                App(state)
+            CompositionLocalProvider(LocalTypingFocus provides typing) {
+                if (ready) {
+                    App(state)
+                }
             }
         }
     }
