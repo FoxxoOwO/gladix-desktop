@@ -78,7 +78,10 @@ fun HomeScreen(state: AppState) {
                         if (tracks.isNullOrEmpty()) {
                             state.showToast(strings.flowUnavailable)
                         } else {
-                            state.ctx.player.playList(tracks, 0)
+                            state.ctx.player.playList(
+                                tracks, 0,
+                                refill = { state.ctx.client.flowTracks() }
+                            )
                             state.showToast(strings.radioTracks(tracks.size))
                         }
                     }

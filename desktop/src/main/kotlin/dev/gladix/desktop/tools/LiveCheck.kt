@@ -141,6 +141,12 @@ fun main() = runBlocking {
     check("flow has tracks", !flow.isNullOrEmpty(), "${flow?.size ?: 0} tracks")
     println("  first: ${flow?.firstOrNull()?.title}")
 
+    // Endless Flow relies on a fresh batch not repeating the one already queued.
+    val again = probe("flow loads twice") { client.flowTracks() }
+    val known = flow.orEmpty().mapTo(HashSet()) { it.id }
+    val fresh = again.orEmpty().filterNot { it.id in known }
+    check("flow keeps producing new tracks", fresh.isNotEmpty(), "${fresh.size} of ${again?.size ?: 0} new")
+
     if (failures > 0) {
         println("liveCheck FAILED ($failures)")
         exitProcess(1)

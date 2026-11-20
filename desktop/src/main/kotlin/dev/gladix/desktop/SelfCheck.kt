@@ -11,6 +11,11 @@ import dev.gladix.desktop.core.AppJson
 import dev.gladix.desktop.core.AppPaths
 import dev.gladix.desktop.core.DeezerClient
 import dev.gladix.desktop.core.DownloadManager
+import dev.gladix.desktop.core.UpdateChecker
+import dev.gladix.desktop.core.readyState
+import dev.gladix.desktop.core.sha256
+import dev.gladix.desktop.core.expectedSha256
+import java.io.File
 import dev.gladix.desktop.core.HistoryStore
 import dev.gladix.desktop.core.Lrclib
 import dev.gladix.desktop.core.PrefsSettings
@@ -425,6 +430,49 @@ fun main(args: Array<String>) {
         if (pick("Mac OS X", "x86_64") != "u-mac-x64") error("intel mac picked the wrong asset")
         if (pick("FreeBSD", "amd64") != null) error("an unknown platform should pick nothing")
         println("      windows=u-win linux=u-linux macos-arm=u-mac-arm macos-x64=u-mac-x64")
+    }
+
+    check("update downloads are checked against the release notes") {
+        val notes = """Gladix 1.4.7
+
+## SHA-256
+2187d1c0d0b7d1f9d0db1ec6e1ba9d64c3e1a5f2b0d9c1e8f7a6b5c4d3e2f1a0  Gladix-1.4.7-windows-x64.zip
+9f0e8d7c6b5a49382716f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a0  Gladix-1.4.7-linux-x64.zip
+""".trimIndent()
+
+        val win = expectedSha256(notes, "Gladix-1.4.7-windows-x64.zip")
+        if (win != "2187d1c0d0b7d1f9d0db1ec6e1ba9d64c3e1a5f2b0d9c1e8f7a6b5c4d3e2f1a0") {
+            error("windows hash was not read from the notes: $win")
+        }
+        if (expectedSha256(notes, "Gladix-1.4.7-macos-x64.zip") != null) {
+            error("a hash was invented for a file the notes do not list")
+        }
+        if (expectedSha256(null, "x.zip") != null) error("null notes gave a hash")
+        val placeholder = "SHA-256" + System.lineSeparator() + "TODO  Gladix-1.4.7-windows-x64.zip"
+        if (expectedSha256(placeholder, "Gladix-1.4.7-windows-x64.zip") != null) {
+            error("an unfinished placeholder block was accepted")
+        }
+
+        val file = File(AppPaths.root, "selfcheck-sha256.txt")
+        file.writeText("abc")
+        val digest = sha256(file)
+        file.delete()
+        if (digest != "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad") {
+            error("sha256 of \"abc\" was $digest")
+        }
+        file.delete()
+    }
+
+    check("a prepared update is not fetched again") {
+        fun s(hasUpdate: Boolean, latest: String?, staged: String?, downloaded: String?) =
+            readyState(hasUpdate, latest, staged, downloaded)
+
+        if (s(false, "1.4.7", null, null) != UpdateChecker.State.UpToDate) error("no update should be up to date")
+        if (s(true, "1.4.8", null, null) != UpdateChecker.State.Available) error("a new version should be available")
+        if (s(true, "1.4.8", "1.4.8", null) != UpdateChecker.State.Ready) error("staged update should stay ready")
+        if (s(true, "1.4.8", null, "1.4.8") != UpdateChecker.State.Downloaded) error("downloaded update should stay downloaded")
+        // A newer release must not reuse the older staging copy.
+        if (s(true, "1.4.9", "1.4.8", null) != UpdateChecker.State.Available) error("an old staging copy was reused")
     }
 
     check("the download folder follows the setting") {
