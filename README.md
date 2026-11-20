@@ -8,9 +8,9 @@ Android UI with a Compose Desktop UI.
 
 [![Latest release](https://img.shields.io/github/v/release/FoxxoOwO/gladix-desktop)](https://github.com/FoxxoOwO/gladix-desktop/releases/latest)
 
-**Download:** [Gladix-1.4.8](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — `windows-x64`, `linux-x64`, `macos-arm64` and `macos-x64` zips, each with its own JVM runtime, no JDK needed. Unzip and run `Gladix\Gladix.exe`, `Gladix/bin/Gladix` or `Gladix.app`.
+**Download:** [Gladix-1.4.9](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — `windows-x64`, `linux-x64`, `macos-arm64` and `macos-x64` zips, each with its own JVM runtime, no JDK needed. Unzip and run `Gladix\Gladix.exe`, `Gladix/bin/Gladix` or `Gladix.app`.
 
-**Stažení:** [Gladix-1.4.8](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — archivy `windows-x64`, `linux-x64`, `macos-arm64` a `macos-x64`, každý s vlastním JVM runtime, JDK není potřeba. Rozbalte a spusťte `Gladix\Gladix.exe`, `Gladix/bin/Gladix` nebo `Gladix.app`.
+**Stažení:** [Gladix-1.4.9](https://github.com/FoxxoOwO/gladix-desktop/releases/latest) — archivy `windows-x64`, `linux-x64`, `macos-arm64` a `macos-x64`, každý s vlastním JVM runtime, JDK není potřeba. Rozbalte a spusťte `Gladix\Gladix.exe`, `Gladix/bin/Gladix` nebo `Gladix.app`.
 
 ---
 
