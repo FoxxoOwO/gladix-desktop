@@ -75,6 +75,8 @@ interface Strings {
     val saveToLibrary: String
     val downloadAll: String
     val radio: String
+    val flow: String
+    val flowUnavailable: String
     fun trackCount(count: Long): String
     fun downloading(count: Int): String
     val radioUnavailable: String
@@ -294,6 +296,8 @@ private object CsStrings : Strings {
     override val saveToLibrary = "Uložit do knihovny"
     override val downloadAll = "Stáhnout vše"
     override val radio = "Rádio"
+    override val flow = "Flow"
+    override val flowUnavailable = "Flow se nepodařilo načíst"
     override fun trackCount(count: Long) = "$count skladeb"
     override fun downloading(count: Int) = "Stahuji $count skladeb"
     override val radioUnavailable = "Rádio není pro tuto položku dostupné"
@@ -514,6 +518,8 @@ private object EnStrings : Strings {
     override val saveToLibrary = "Save to library"
     override val downloadAll = "Download all"
     override val radio = "Radio"
+    override val flow = "Flow"
+    override val flowUnavailable = "Flow could not be loaded"
     override fun trackCount(count: Long) = if (count == 1L) "1 track" else "$count tracks"
     override fun downloading(count: Int) =
         if (count == 1) "Downloading 1 track" else "Downloading $count tracks"

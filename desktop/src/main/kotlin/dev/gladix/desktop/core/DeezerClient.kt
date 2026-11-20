@@ -120,6 +120,13 @@ class DeezerClient(val settings: PrefsSettings) {
     suspend fun trackShelves(track: Track): List<Shelf> =
         runCatching { extension.loadFeed(track) }.getOrNull()?.allShelves().orEmpty()
 
+    /** Tracks of a radio, Flow included. */
+    suspend fun radioTracks(radio: Radio): List<Track> = extension.loadTracks(radio).allItems()
+
+    /** Deezer Flow: the account's own endless stream, without a seed. */
+    suspend fun flowTracks(): List<Track> =
+        radioTracks(Radio(id = "default", title = "Flow", extras = mapOf("radio" to "flow")))
+
     suspend fun radioFor(item: EchoMediaItem, context: EchoMediaItem?): Feed<Track>? =
         runCatching { extension.radio(item, context) }.getOrNull()?.let {
             runCatching { extension.loadTracks(it) }.getOrNull()

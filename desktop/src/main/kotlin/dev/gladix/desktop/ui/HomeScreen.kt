@@ -15,7 +15,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Podcasts
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -33,6 +39,7 @@ import dev.brahmkshatriya.echo.common.models.Shelf
 import dev.brahmkshatriya.echo.common.models.Tab
 import dev.brahmkshatriya.echo.common.models.Track
 import dev.gladix.desktop.ui.text.UiStrings
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(state: AppState) {
@@ -58,6 +65,30 @@ fun HomeScreen(state: AppState) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            val scope = rememberCoroutineScope()
+            var loadingFlow by remember { mutableStateOf(false) }
+            // Flow is the account's own endless stream: no seed, no selection.
+            Button(
+                onClick = {
+                    loadingFlow = true
+                    scope.launch {
+                        val tracks = runCatching { state.ctx.client.flowTracks() }.getOrNull()
+                        loadingFlow = false
+                        if (tracks.isNullOrEmpty()) {
+                            state.showToast(strings.flowUnavailable)
+                        } else {
+                            state.ctx.player.playList(tracks, 0)
+                            state.showToast(strings.radioTracks(tracks.size))
+                        }
+                    }
+                },
+                enabled = !loadingFlow,
+                shape = CircleShape
+            ) {
+                Icon(Icons.Rounded.Podcasts, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(strings.flow)
             }
         }
 
