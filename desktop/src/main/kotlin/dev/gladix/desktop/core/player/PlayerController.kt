@@ -24,11 +24,16 @@ import java.io.InputStream
 
 enum class RepeatMode { OFF, ALL, ONE }
 
+/** [SavedQueue.refillTag] value of the endless Deezer Flow. */
+const val FLOW = "flow"
+
 @Serializable
 data class SavedQueue(
     val tracks: List<Track> = emptyList(),
     val index: Int = -1,
-    val shuffleOrder: List<Int> = emptyList()
+    val shuffleOrder: List<Int> = emptyList(),
+    /** Endless source to re-arm after a restart; null for an ordinary queue. */
+    val refillTag: String? = null
 )
 
 /**
@@ -69,6 +74,9 @@ class PlayerController(
      */
     private var refill: (suspend () -> List<Track>)? = null
     private var refilling = false
+
+    /** Name of the endless source behind [refill], persisted with the queue. */
+    private var refillTag: String? = null
 
     var isPlaying by mutableStateOf(false)
         private set
@@ -134,12 +142,15 @@ class PlayerController(
         shuffleOrder = saved.shuffleOrder
         index = saved.index.coerceIn(-1, saved.tracks.size - 1)
         durationMs = current?.duration ?: 0L
+        // Flow stays endless across restarts; a plain queue simply ends.
+        refillTag = saved.refillTag
+        refill = if (saved.refillTag == FLOW) ({ client.flowTracks() }) else null
     }
 
     private fun persist() {
         writeJsonFile(
             AppPaths.queueFile,
-            SavedQueue(queue, index, shuffleOrder)
+            SavedQueue(queue, index, shuffleOrder, refillTag)
         )
     }
 
@@ -175,13 +186,15 @@ class PlayerController(
         tracks: List<Track>,
         startIndex: Int = 0,
         context: EchoMediaItem? = null,
-        refill: (suspend () -> List<Track>)? = null
+        refill: (suspend () -> List<Track>)? = null,
+        refillTag: String? = null
     ) {
         if (tracks.isEmpty()) return
         queue = tracks
         index = startIndex.coerceIn(0, tracks.size - 1)
         this.context = context
         this.refill = refill
+        this.refillTag = refillTag
         rebuildShuffleOrder()
         startCurrent(0L)
     }
@@ -454,9 +467,9 @@ class PlayerController(
             persist()
 
             val opener: suspend () -> InputStream = {
-                val offline = downloads.entry(track.id)
-                if (offline != null) {
-                    File(offline.path).inputStream()
+                val offline = downloads.entry(track.id)?.let { File(it.path) }
+                if (offline != null && offline.isFile) {
+                    offline.inputStream()
                 } else if (cache != null) {
                     cache.openStream(track)
                 } else {

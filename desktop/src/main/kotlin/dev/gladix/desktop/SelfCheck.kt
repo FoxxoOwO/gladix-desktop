@@ -11,6 +11,7 @@ import dev.gladix.desktop.core.AppJson
 import dev.gladix.desktop.core.AppPaths
 import dev.gladix.desktop.core.DeezerClient
 import dev.gladix.desktop.core.DownloadManager
+import dev.gladix.desktop.core.SelfUpdater
 import dev.gladix.desktop.core.UpdateChecker
 import dev.gladix.desktop.core.readyState
 import dev.gladix.desktop.core.sha256
@@ -473,6 +474,37 @@ fun main(args: Array<String>) {
         if (s(true, "1.4.8", null, "1.4.8") != UpdateChecker.State.Downloaded) error("downloaded update should stay downloaded")
         // A newer release must not reuse the older staging copy.
         if (s(true, "1.4.9", "1.4.8", null) != UpdateChecker.State.Available) error("an old staging copy was reused")
+    }
+
+    check("an app image is recognised on every platform") {
+        val base = java.nio.file.Files.createTempDirectory("gladix-image").toFile()
+
+        val linux = File(base, "GladixLinux")
+        File(linux, "bin").mkdirs()
+        File(linux, "lib").mkdirs()
+        File(linux, "bin/Gladix").writeText("#!/bin/sh")
+
+        val mac = File(base, "Gladix.app")
+        File(mac, "Contents/MacOS").mkdirs()
+        File(mac, "Contents/MacOS/Gladix").writeText("x")
+
+        val win = File(base, "GladixWindows")
+        File(win, "app").mkdirs()
+        File(win, "Gladix.exe").writeText("x")
+
+        if (!SelfUpdater(linux).isSupported) error("linux image not recognised")
+        if (!SelfUpdater(mac).isSupported) error("mac bundle not recognised")
+        if (!SelfUpdater(win).isSupported) error("windows image not recognised")
+        if (SelfUpdater(File(base, "empty")).isSupported) error("an empty folder looked like an image")
+
+        val script = SelfUpdater(linux).renderShScript("/tmp/a b/src", "/tmp/a b/dst", true, 42, "/tmp/a b/log")
+        for (needle in listOf("'/tmp/a b/src'", "'/tmp/a b/dst'", "restart=1", "pid=42", "while kill -0", "rm -rf", "rolled back")) {
+            if (!script.contains(needle)) error("swap script is missing $needle")
+        }
+        if (script.contains("restart=0")) error("the restart flag was lost")
+        val quoted = SelfUpdater(linux).renderShScript("/tmp/it's/src", "/tmp/dst", false, 1, "/tmp/log")
+        if (!quoted.contains("/tmp/it'\\''s/src")) error("an apostrophe in the path was not escaped")
+        base.deleteRecursively()
     }
 
     check("the download folder follows the setting") {
