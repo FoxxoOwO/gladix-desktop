@@ -28,8 +28,17 @@ data class DownloadEntry(
  */
 class DownloadManager(
     private val client: DeezerClient,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val settings: PrefsSettings
 ) {
+
+    /** Where new files land: the picked folder, else the app data folder. */
+    val dir: File
+        get() = settings.getString(PrefsSettings.KEY_DOWNLOAD_DIR)
+            ?.takeIf { it.isNotBlank() }
+            ?.let(::File)
+            ?.takeIf { it.isDirectory }
+            ?: AppPaths.downloads
 
     private val _items = mutableMapOf<String, DownloadEntry>()
     private val _progress = mutableMapOf<String, Float>()
@@ -80,10 +89,10 @@ class DownloadManager(
         scope.launch(Dispatchers.IO) {
             val result = runCatching {
                 val stream = client.openStream(track)
-                val tmp = File(AppPaths.downloads, "${track.id}.part")
+                val tmp = File(dir, "${track.id}.part")
                 val written = stream.copyWithProgress(tmp, track.id)
                 val ext = detectExtension(tmp)
-                val target = File(AppPaths.downloads, "${track.id}.$ext")
+                val target = File(dir, "${track.id}.$ext")
                 if (target.exists()) target.delete()
                 tmp.renameTo(target)
                 val entry = DownloadEntry(track, target.absolutePath, written, System.currentTimeMillis())

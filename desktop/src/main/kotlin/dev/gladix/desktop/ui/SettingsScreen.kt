@@ -36,6 +36,7 @@ import dev.gladix.desktop.core.UpdateChecker
 import dev.gladix.desktop.ui.text.Lang
 import dev.gladix.desktop.ui.text.UiStrings
 import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 fun SettingsScreen(state: AppState) {
@@ -291,8 +292,11 @@ fun SettingsScreen(state: AppState) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            var downloadDir by remember {
+                mutableStateOf(state.ctx.downloads.dir.absolutePath)
+            }
             Text(
-                text = strings.downloadsFolder(AppPaths.downloads.absolutePath),
+                text = strings.downloadsFolder(downloadDir),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -300,9 +304,16 @@ fun SettingsScreen(state: AppState) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(onClick = {
                     runCatching {
-                        java.awt.Desktop.getDesktop().open(AppPaths.downloads)
+                        java.awt.Desktop.getDesktop().open(File(downloadDir))
                     }
                 }) { Text(strings.openFolder) }
+                OutlinedButton(onClick = {
+                    val picked = pickFolder(strings.chooseFolder, File(downloadDir))
+                    if (picked != null) {
+                        settings.putString(PrefsSettings.KEY_DOWNLOAD_DIR, picked.absolutePath)
+                        downloadDir = picked.absolutePath
+                    }
+                }) { Text(strings.chooseFolder) }
                 OutlinedButton(onClick = {
                     state.ctx.cache.clear()
                     cacheUsedMb = 0L
@@ -586,5 +597,19 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
             modifier = Modifier.padding(bottom = 10.dp)
         )
         content()
+    }
+}
+
+/** Native folder picker for the download folder; null when cancelled. */
+private fun pickFolder(title: String, start: File): File? {
+    val chooser = javax.swing.JFileChooser(start).apply {
+        dialogTitle = title
+        fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
+        isAcceptAllFileFilterUsed = false
+    }
+    return if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+        chooser.selectedFile
+    } else {
+        null
     }
 }

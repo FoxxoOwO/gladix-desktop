@@ -191,6 +191,7 @@ interface Strings {
     fun dataFolder(path: String): String
     fun downloadsFolder(path: String): String
     val openFolder: String
+    val chooseFolder: String
     val clearHistory: String
     val historyCleared: String
     val musicCache: String
@@ -410,6 +411,7 @@ private object CsStrings : Strings {
     override fun dataFolder(path: String) = "Složka s daty: $path"
     override fun downloadsFolder(path: String) = "Stažené skladby: $path"
     override val openFolder = "Otevřít složku"
+    override val chooseFolder = "Vybrat složku"
     override val clearHistory = "Vymazat historii"
     override val historyCleared = "Historie vymazána"
     override val musicCache = "Mezipaměť hudby"
@@ -632,6 +634,7 @@ private object EnStrings : Strings {
     override fun dataFolder(path: String) = "Data folder: $path"
     override fun downloadsFolder(path: String) = "Downloaded tracks: $path"
     override val openFolder = "Open folder"
+    override val chooseFolder = "Choose folder"
     override val clearHistory = "Clear history"
     override val historyCleared = "History cleared"
     override val musicCache = "Music cache"

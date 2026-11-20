@@ -24,7 +24,7 @@ class AppContext {
     val settings = PrefsSettings()
     val client = DeezerClient(settings)
     val cache = AudioCacheManager(client, settings, scope)
-    val downloads = DownloadManager(client, scope)
+    val downloads = DownloadManager(client, scope, settings)
     val history = HistoryStore()
     val player = PlayerController(client, downloads, history, settings, scope, cache)
     val updates = UpdateChecker(settings, scope)
