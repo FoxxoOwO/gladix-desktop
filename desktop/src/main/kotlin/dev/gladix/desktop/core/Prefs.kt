@@ -101,6 +101,9 @@ class PrefsSettings(val file: File = AppPaths.settingsFile) : Settings {
         const val KEY_MEDIA_SESSION = "desktop_media_session"
         const val KEY_MEDIA_KEYS = "desktop_media_keys"
 
+        /** Folder the download button writes into; empty means the app data folder. */
+        const val KEY_DOWNLOAD_DIR = "desktop_download_dir"
+
         /** Discord Rich Presence (`1` = on). */
         const val KEY_DISCORD_PRESENCE = "desktop_discord_presence"
 

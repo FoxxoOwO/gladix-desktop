@@ -427,6 +427,27 @@ fun main(args: Array<String>) {
         println("      windows=u-win linux=u-linux macos-arm=u-mac-arm macos-x64=u-mac-x64")
     }
 
+    check("the download folder follows the setting") {
+        val prefs = PrefsSettings(java.io.File(AppPaths.root, "selfcheck-downloads.properties"))
+        val manager = DownloadManager(
+            DeezerClient(prefs),
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default),
+            prefs
+        )
+        if (manager.dir != AppPaths.downloads) error("an unset folder should fall back to app data")
+
+        val picked = java.nio.file.Files.createTempDirectory("gladix-dl").toFile()
+        prefs.putString(PrefsSettings.KEY_DOWNLOAD_DIR, picked.absolutePath)
+        if (manager.dir != picked) error("a picked folder should be used as is")
+
+        // A folder that was moved or deleted must not break downloading.
+        picked.deleteRecursively()
+        if (manager.dir != AppPaths.downloads) error("a missing folder should fall back to app data")
+
+        prefs.putString(PrefsSettings.KEY_DOWNLOAD_DIR, null)
+        println("      default=${AppPaths.downloads.name} picked=$picked")
+    }
+
     // ----------------------------------------------------------------- audio
 
     check("javax.sound knows the PCM format and registers decoders") {
@@ -604,7 +625,7 @@ fun main(args: Array<String>) {
         val prefs = PrefsSettings(java.io.File(AppPaths.root, "selfcheck5.properties"))
         val player = PlayerController(
             DeezerClient(prefs),
-            DownloadManager(DeezerClient(prefs), kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default)),
+            DownloadManager(DeezerClient(prefs), kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default), prefs),
             HistoryStore(),
             prefs,
             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default)

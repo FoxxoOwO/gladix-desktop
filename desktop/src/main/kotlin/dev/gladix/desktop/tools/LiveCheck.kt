@@ -94,7 +94,7 @@ fun main() = runBlocking {
 
     // 2. Downloads: the same call the download button makes, then clean up.
     step("download")
-    val downloads = DownloadManager(client, CoroutineScope(SupervisorJob() + Dispatchers.IO))
+    val downloads = DownloadManager(client, CoroutineScope(SupervisorJob() + Dispatchers.IO), PrefsSettings())
     downloads.load()
     if (track != null) {
         val entry = probe("track downloads") {
