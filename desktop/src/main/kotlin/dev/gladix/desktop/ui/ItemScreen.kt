@@ -110,7 +110,10 @@ fun ItemScreen(state: AppState, item: EchoMediaItem) {
             LaunchedEffect(item.id) {
                 val tracks = runCatching { state.ctx.client.radioTracks(item) }.getOrNull()
                 if (tracks.isNullOrEmpty()) state.showToast(UiStrings.s.radioUnavailable)
-                else state.ctx.player.playList(tracks, 0, item)
+                else state.ctx.player.playList(
+                    tracks, 0, item,
+                    refill = { state.ctx.client.radioTracks(item) }
+                )
             }
             EmptyBox(UiStrings.s.playingNow(item.title))
         }
@@ -293,7 +296,12 @@ private fun <T> CollectionScreen(
                             if (radioTracks.isNullOrEmpty()) {
                                 state.showToast(UiStrings.s.radioUnavailable)
                             } else {
-                                state.ctx.player.playList(radioTracks, 0, item)
+                                state.ctx.player.playList(
+                                    radioTracks, 0, item,
+                                    refill = {
+                                        state.ctx.client.radioFor(item, item)?.allItems().orEmpty()
+                                    }
+                                )
                                 state.showToast(UiStrings.s.radioTracks(radioTracks.size))
                             }
                         }

@@ -192,7 +192,12 @@ fun TrackMenuButton(
                     if (tracks.isNullOrEmpty()) {
                         state.showToast(strings.radioUnavailable)
                     } else {
-                        player.playList(tracks, 0, track)
+                        player.playList(
+                            tracks, 0, track,
+                            refill = {
+                                state.ctx.client.radioFor(track, null)?.allItems().orEmpty()
+                            }
+                        )
                         state.showToast(strings.radioTracks(tracks.size))
                     }
                 }

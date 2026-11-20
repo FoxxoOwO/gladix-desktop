@@ -63,6 +63,13 @@ class PlayerController(
     var context by mutableStateOf<EchoMediaItem?>(null)
         private set
 
+    /**
+     * Fetches the next batch of an endless source (Deezer Flow, a radio). Null
+     * for ordinary lists, so those still stop at the end.
+     */
+    private var refill: (suspend () -> List<Track>)? = null
+    private var refilling = false
+
     var isPlaying by mutableStateOf(false)
         private set
     var isBuffering by mutableStateOf(false)
@@ -160,11 +167,21 @@ class PlayerController(
         startCurrent(0L)
     }
 
-    fun playList(tracks: List<Track>, startIndex: Int = 0, context: EchoMediaItem? = null) {
+    /**
+     * Replaces the queue and starts playing. Pass [refill] for an endless
+     * source: when the queue runs out it asks for more instead of stopping.
+     */
+    fun playList(
+        tracks: List<Track>,
+        startIndex: Int = 0,
+        context: EchoMediaItem? = null,
+        refill: (suspend () -> List<Track>)? = null
+    ) {
         if (tracks.isEmpty()) return
         queue = tracks
         index = startIndex.coerceIn(0, tracks.size - 1)
         this.context = context
+        this.refill = refill
         rebuildShuffleOrder()
         startCurrent(0L)
     }
@@ -249,7 +266,14 @@ class PlayerController(
         if (queue.isEmpty()) return
         val nextIndex = nextIndex()
         if (nextIndex == null) {
-            stop()
+            if (refill == null) {
+                stop()
+                return
+            }
+            scope.launch {
+                val start = fetchRefill()
+                if (start == null) stop() else playAt(start)
+            }
             return
         }
         index = nextIndex
@@ -350,6 +374,31 @@ class PlayerController(
     }
 
     // -------------------------------------------------------------- internal
+
+    /**
+     * Appends a fresh batch from [refill] and returns the index it starts at, or
+     * null when nothing new arrived (source exhausted, network down, already
+     * asking). Known tracks are dropped so a repeat of the same radio batch
+     * cannot loop the queue.
+     */
+    private suspend fun fetchRefill(): Int? {
+        val fetch = refill ?: return null
+        if (refilling) return null
+        refilling = true
+        return try {
+            val more = runCatching { fetch() }.getOrNull().orEmpty()
+            val known = queue.mapTo(HashSet()) { it.id }
+            val fresh = more.filterNot { it.id in known }
+            if (fresh.isEmpty()) return null
+            val start = queue.size
+            queue = queue + fresh
+            shuffleOrder = if (shuffle) shuffleOrder + (start until queue.size).shuffled() else emptyList()
+            persist()
+            start
+        } finally {
+            refilling = false
+        }
+    }
 
     private fun nextIndex(): Int? {
         if (repeatMode == RepeatMode.ONE) return index
@@ -482,6 +531,11 @@ class PlayerController(
             }
         }
         if (nextIdx == null) {
+            val start = fetchRefill()
+            if (start != null) {
+                playAt(start)
+                return
+            }
             playJob = null
             engine.stop()
             positionMs = 0L

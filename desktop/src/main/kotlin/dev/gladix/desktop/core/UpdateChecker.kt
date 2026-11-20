@@ -56,6 +56,11 @@ class UpdateChecker(
     var stagedImage by mutableStateOf<File?>(null)
         private set
 
+    // Versions of [stagedImage] and [downloadedFile]; a check never discards a
+    // prepared update just because it runs again, but must not keep the wrong one.
+    private var stagedVersion: String? = null
+    private var downloadedVersion: String? = null
+
     /** Called by the UI to shut the app down after [applyAndRestart]. */
     var onExitRequest: (() -> Unit)? = null
 
@@ -116,11 +121,16 @@ class UpdateChecker(
             latestVersion = tag?.trimStart('v')
             releaseNotes = release.string("body")
             downloadUrl = pickReleaseAsset(release["assets"] as? JsonArray)
-            state = if (hasUpdate) State.Available else State.UpToDate
+            state = readyState(hasUpdate, latestVersion, stagedVersion, downloadedVersion)
             // Fully automatic path: while the switch is on, fetch and unpack
             // the release right away so the user only confirms the restart.
-            // An already prepared update is not downloaded twice.
-            if (hasUpdate && autoEnabled && downloadUrl != null && state == State.Available) {
+            // An already prepared update is not downloaded twice; a platform
+            // that cannot swap the image itself (Linux, macOS) is not made to
+            // pull 100 MB on its own — the button stays manual there.
+            if (
+                hasUpdate && autoEnabled && selfUpdater.isSupported &&
+                downloadUrl != null && state == State.Available
+            ) {
                 download()
             }
         }.onFailure {
@@ -170,7 +180,15 @@ class UpdateChecker(
                 file
             }
             result.onSuccess {
+                val expected = expectedSha256(releaseNotes, it.name)
+                if (expected != null && sha256(it) != expected) {
+                    runCatching { it.delete() }
+                    state = State.Failed
+                    error = "checksum mismatch for ${it.name}"
+                    return@onSuccess
+                }
                 downloadedFile = it
+                downloadedVersion = latestVersion
                 downloadProgress = 1f
                 prepare(it)
             }.onFailure {
@@ -193,6 +211,7 @@ class UpdateChecker(
         state = State.Extracting
         runCatching { selfUpdater.stage(zip) }.onSuccess { image ->
             stagedImage = image
+            stagedVersion = latestVersion
             state = State.Ready
             // The ZIP is no longer needed once the image is unpacked.
             runCatching { zip.delete() }
@@ -285,3 +304,51 @@ fun compareVersions(a: String, b: String): Int {
     }
     return 0
 }
+
+/**
+ * State a finished check shows. A version already staged or downloaded for this
+ * exact release survives the next check instead of being fetched again.
+ */
+internal fun readyState(
+    hasUpdate: Boolean,
+    latest: String?,
+    stagedVersion: String?,
+    downloadedVersion: String?
+): UpdateChecker.State = when {
+    !hasUpdate -> UpdateChecker.State.UpToDate
+    stagedVersion != null && stagedVersion == latest -> UpdateChecker.State.Ready
+    downloadedVersion != null && downloadedVersion == latest -> UpdateChecker.State.Downloaded
+    else -> UpdateChecker.State.Available
+}
+
+/**
+ * SHA-256 listed for [fileName] in the release notes, if the notes contain the
+ * `SHA-256` block the release workflow writes (`<hash>  <name>` per line).
+ */
+internal fun expectedSha256(notes: String?, fileName: String): String? =
+    notes.orEmpty().lineSequence()
+        .map { it.trim() }
+        .mapNotNull { line ->
+            val parts = line.split("  ").filter { it.isNotBlank() }
+            val hash = parts.getOrNull(0).orEmpty()
+            if (
+                parts.size == 2 && hash.length == 64 &&
+                hash.all { it in "0123456789abcdefABCDEF" } && parts[1] == fileName
+            ) hash.lowercase() else null
+        }
+        .firstOrNull()
+
+/** Lowercase hex SHA-256 of a file, streamed so a 100 MB zip is fine. */
+internal fun sha256(file: File): String {
+    val digest = java.security.MessageDigest.getInstance("SHA-256")
+    file.inputStream().use { input ->
+        val buffer = ByteArray(128 * 1024)
+        while (true) {
+            val read = input.read(buffer)
+            if (read <= 0) break
+            digest.update(buffer, 0, read)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
