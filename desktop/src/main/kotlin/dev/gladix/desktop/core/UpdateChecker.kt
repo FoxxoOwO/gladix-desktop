@@ -57,6 +57,18 @@ class UpdateChecker(
     var stagedImage by mutableStateOf<File?>(null)
         private set
 
+    /**
+     * The download has to be installed by hand, because the app cannot write into
+     * its own folder — a system-wide `/opt` or `/Applications` install, where only
+     * Windows asks for elevation.
+     */
+    var manualInstall by mutableStateOf(false)
+        private set
+
+    /** Version of an update that was started on the last run but never landed. */
+    var lastSwapVersion by mutableStateOf<String?>(null)
+        private set
+
     // Versions of [stagedImage] and [downloadedFile]; a check never discards a
     // prepared update just because it runs again, but must not keep the wrong one.
     private var stagedVersion: String? = null
@@ -81,6 +93,10 @@ class UpdateChecker(
     val busy: Boolean
         get() = blocksCheck(state)
 
+    /** Folder a read-only install has to be unpacked into by hand. */
+    val installFolder: String?
+        get() = selfUpdater.installRoot?.absolutePath
+
     /**
      * Starts the periodic check. The switch is read on every round, so turning
      * it off stops the requests and turning it on starts them without a
@@ -88,6 +104,9 @@ class UpdateChecker(
      */
     fun startPeriodicCheck() {
         scope.launch(Dispatchers.IO) {
+            // Before anything deletes files: the marker the previous run left
+            // says whether the swap that ended it actually landed.
+            runCatching { reportUnfinishedSwap() }
             // A previous run may have left an unapplied staging copy or the
             // backup folder of a swap that could not delete it.
             runCatching { selfUpdater.cleanUp() }
@@ -218,6 +237,15 @@ class UpdateChecker(
             state = State.Downloaded
             return@withContext
         }
+        if (!selfUpdater.canInstallInPlace) {
+            // The swap renames folders, so it needs write access where the image
+            // lives. Windows escalates; elsewhere a read-only install stays a
+            // manual unzip instead of a failure the user cannot act on.
+            manualInstall = true
+            state = State.Downloaded
+            return@withContext
+        }
+        manualInstall = false
         state = State.Extracting
         runCatching { selfUpdater.stage(zip) }.onSuccess { image ->
             stagedImage = image
@@ -235,6 +263,7 @@ class UpdateChecker(
     fun applyAndRestart() {
         val image = stagedImage ?: return
         if (state == State.Applying) return
+        markSwap(latestVersion)
         if (!selfUpdater.apply(image, restart = true)) {
             state = State.Failed
             error = "update script could not be started"
@@ -251,8 +280,25 @@ class UpdateChecker(
     fun applyOnExit() {
         val image = stagedImage ?: return
         if (state != State.Ready) return
+        markSwap(latestVersion)
         runCatching { selfUpdater.apply(image, restart = false) }
     }
+
+    /** Leaves a note for the next start; the swap runs after this process dies. */
+    private fun markSwap(version: String?) {
+        lastSwapVersion = null
+        runCatching { swapMarker.writeText(version.orEmpty()) }
+    }
+
+    private fun reportUnfinishedSwap() {
+        if (!swapMarker.isFile) return
+        val marker = runCatching { swapMarker.readText() }.getOrNull()
+        runCatching { swapMarker.delete() }
+        lastSwapVersion = unfinishedSwap(marker, AppVersion.NAME)
+    }
+
+    private val swapMarker: File
+        get() = File(AppPaths.root, "update-applying")
 
     /** Opens the folder holding the downloaded zip, plus its parent. */
     fun openDownloadFolder() {
@@ -262,6 +308,16 @@ class UpdateChecker(
 
     private fun JsonObject.string(key: String): String? =
         (this[key] as? JsonPrimitive)?.contentOrNull
+}
+
+/**
+ * Version of a swap the running build does not match. A marker equal to
+ * [current] means the swap landed; anything else means it did not, so the user
+ * is told instead of silently staying on the old build.
+ */
+internal fun unfinishedSwap(marker: String?, current: String): String? {
+    val version = marker?.trim().orEmpty()
+    return version.takeIf { it.isNotEmpty() && it != current }
 }
 
 /**

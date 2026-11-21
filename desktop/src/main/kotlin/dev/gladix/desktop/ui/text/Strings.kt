@@ -222,12 +222,14 @@ interface Strings {
     val downloadUpdate: String
     val downloadingUpdate: String
     val updateDownloaded: String
+    fun updateReadOnlyInstall(path: String): String
     val preparingUpdate: String
     val updateReady: String
     val restartToUpdate: String
     val applyingUpdate: String
     val openDownloads: String
     val updateFailed: String
+    fun lastUpdateFailed(version: String): String
 
     // Volume
     val volumeScrollHint: String
@@ -445,12 +447,16 @@ private object CsStrings : Strings {
     override val downloadUpdate = "Stáhnout aktualizaci"
     override val downloadingUpdate = "Stahuji aktualizaci…"
     override val updateDownloaded = "Aktualizace stažena. Rozbal ji a spusť Gladix.exe."
+    override fun updateReadOnlyInstall(path: String) =
+        "Do složky $path nemá aplikace právo zapisovat. Rozbal tam aktualizaci ručně."
     override val preparingUpdate = "Rozbaluji aktualizaci…"
     override val updateReady = "Aktualizace je připravená. Restartuj nebo ji nech použít při zavření."
     override val restartToUpdate = "Restartovat a aktualizovat"
     override val applyingUpdate = "Aktualizace se instaluje, aplikace se zavře…"
     override val openDownloads = "Otevřít složku"
     override val updateFailed = "Kontrola aktualizací selhala"
+    override fun lastUpdateFailed(version: String) =
+        "Aktualizace na $version se nedokončila. Zkus ji nainstalovat znovu."
 
     override val volumeScrollHint = "Kolečkem myši měníš hlasitost"
 
@@ -668,12 +674,16 @@ private object EnStrings : Strings {
     override val downloadUpdate = "Download update"
     override val downloadingUpdate = "Downloading update…"
     override val updateDownloaded = "Update downloaded. Unzip it and run Gladix.exe."
+    override fun updateReadOnlyInstall(path: String) =
+        "The app cannot write to $path. Unzip the update there yourself."
     override val preparingUpdate = "Unpacking update…"
     override val updateReady = "Update ready. Restart now or let it apply when you close the app."
     override val restartToUpdate = "Restart and update"
     override val applyingUpdate = "Installing the update, the app will close…"
     override val openDownloads = "Open folder"
     override val updateFailed = "Update check failed"
+    override fun lastUpdateFailed(version: String) =
+        "The update to $version did not finish. Try installing it again."
 
     override val volumeScrollHint = "Scroll the mouse wheel to change the volume"
 

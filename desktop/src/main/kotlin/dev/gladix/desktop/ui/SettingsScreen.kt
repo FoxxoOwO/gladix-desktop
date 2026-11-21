@@ -485,7 +485,11 @@ fun SettingsScreen(state: AppState) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    UpdateChecker.State.Downloaded -> OutlinedButton(
+                    UpdateChecker.State.Downloaded -> if (updates.manualInstall) Text(
+                        strings.updateReadOnlyInstall(updates.installFolder.orEmpty()),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    ) else OutlinedButton(
                         onClick = { updates.openDownloadFolder() }
                     ) { Text(strings.openDownloads) }
 
@@ -497,6 +501,17 @@ fun SettingsScreen(state: AppState) {
 
                     UpdateChecker.State.Idle -> Unit
                 }
+            }
+
+            // A swap that started on the last run but did not land leaves the app
+            // on the old build; say so instead of pretending the update worked.
+            updates.lastSwapVersion?.let { version ->
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    strings.lastUpdateFailed(version),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
 
             when (updates.state) {

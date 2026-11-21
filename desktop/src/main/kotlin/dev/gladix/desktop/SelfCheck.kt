@@ -485,6 +485,17 @@ fun main(args: Array<String>) {
         if (s(true, "1.4.9", "1.4.8", null) != UpdateChecker.State.Available) error("an old staging copy was reused")
     }
 
+    check("a swap that never landed is reported on the next start") {
+        fun s(marker: String?, current: String) = dev.gladix.desktop.core.unfinishedSwap(marker, current)
+
+        // The marker names the version the dead process tried to install.
+        if (s("1.4.9", "1.4.8") != "1.4.9") error("an unfinished swap was not reported")
+        // The swap landed: the running build is the one the marker names.
+        if (s("1.4.9", "1.4.9") != null) error("a finished swap was reported as failed")
+        if (s("  \n", "1.4.8") != null) error("an empty marker was reported")
+        if (s(null, "1.4.8") != null) error("a missing marker was reported")
+    }
+
     check("a running download is not disturbed by a second check") {
         fun blocked(state: UpdateChecker.State) = dev.gladix.desktop.core.blocksCheck(state)
 
