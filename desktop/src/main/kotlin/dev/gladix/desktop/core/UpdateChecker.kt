@@ -77,27 +77,37 @@ class UpdateChecker(
     val hasUpdate: Boolean
         get() = latestVersion?.let { compareVersions(it, AppVersion.NAME) > 0 } == true
 
+    /** True while a check, a download or a swap is in flight. */
+    val busy: Boolean
+        get() = blocksCheck(state)
+
     /**
-     * Starts the periodic check. The first run is delayed a little so it does
-     * not compete with the startup feed requests.
+     * Starts the periodic check. The switch is read on every round, so turning
+     * it off stops the requests and turning it on starts them without a
+     * restart; while it is off the loop only re-reads the setting.
      */
     fun startPeriodicCheck() {
-        if (settings.getBoolean(PrefsSettings.KEY_UPDATE_CHECK) == false) return
         scope.launch(Dispatchers.IO) {
             // A previous run may have left an unapplied staging copy or the
             // backup folder of a swap that could not delete it.
             runCatching { selfUpdater.cleanUp() }
             delay(15_000)
             while (isActive) {
-                runCatching { check() }
-                delay(6 * 60 * 60 * 1000L) // every 6 hours
+                if (autoEnabled) {
+                    runCatching { check() }
+                    delay(6 * 60 * 60 * 1000L) // every 6 hours
+                } else {
+                    delay(60_000L)
+                }
             }
         }
     }
 
     /** Asks the GitHub API for the newest release. Safe to call repeatedly. */
     suspend fun check(): Unit = withContext(Dispatchers.IO) {
-        if (state == State.Checking) return@withContext
+        // A check started mid-download would reset the state and let the auto
+        // path begin a second download into the same file.
+        if (busy) return@withContext
         state = State.Checking
         error = null
         val result = runCatching {
@@ -267,7 +277,9 @@ internal fun pickReleaseAsset(
     if (assets == null) return null
     val token = platformToken(os, arch) ?: return null
     val entry = assets.mapNotNull { it as? JsonObject }.firstOrNull {
-        ((it["name"] as? JsonPrimitive)?.contentOrNull ?: "").contains(token)
+        val name = (it["name"] as? JsonPrimitive)?.contentOrNull ?: ""
+        // A `.sha256` or `.blockmap` next to the archive carries the same token.
+        name.contains(token) && name.endsWith(".zip", ignoreCase = true)
     } ?: return null
     return (entry["browser_download_url"] as? JsonPrimitive)?.contentOrNull
 }
@@ -303,6 +315,14 @@ fun compareVersions(a: String, b: String): Int {
         if (l != r) return l.compareTo(r)
     }
     return 0
+}
+
+/** A check must not start while one is running or a download/swap is using it. */
+internal fun blocksCheck(state: UpdateChecker.State): Boolean = when (state) {
+    UpdateChecker.State.Checking, UpdateChecker.State.Downloading,
+    UpdateChecker.State.Extracting, UpdateChecker.State.Applying -> true
+
+    else -> false
 }
 
 /**

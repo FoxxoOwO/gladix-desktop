@@ -428,6 +428,9 @@ fun SettingsScreen(state: AppState) {
                     onCheckedChange = {
                         autoUpdate = it
                         settings.putBoolean(PrefsSettings.KEY_UPDATE_CHECK, it)
+                        // The periodic loop wakes up on its own within a minute;
+                        // switching the checks back on should not wait for that.
+                        if (it) scope.launch { updates.check() }
                     }
                 )
             }
@@ -438,7 +441,7 @@ fun SettingsScreen(state: AppState) {
             ) {
                 OutlinedButton(
                     onClick = { scope.launch { updates.check() } },
-                    enabled = updates.state != UpdateChecker.State.Checking
+                    enabled = !updates.busy
                 ) { Text(strings.checkNow) }
 
                 when (updates.state) {

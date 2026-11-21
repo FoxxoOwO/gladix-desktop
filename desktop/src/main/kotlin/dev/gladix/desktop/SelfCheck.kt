@@ -431,6 +431,14 @@ fun main(args: Array<String>) {
         if (pick("Mac OS X", "aarch64") != "u-mac-arm") error("apple silicon picked the wrong asset")
         if (pick("Mac OS X", "x86_64") != "u-mac-x64") error("intel mac picked the wrong asset")
         if (pick("FreeBSD", "amd64") != null) error("an unknown platform should pick nothing")
+
+        // A hash or blockmap file next to the archive carries the same token.
+        val withDecoys = AppJson.parseToJsonElement(
+            """[{"name":"Gladix-1.4.6-windows-x64.zip.sha256","browser_download_url":"u-hash"},
+                 {"name":"Gladix-1.4.6-windows-x64.zip","browser_download_url":"u-win"}]"""
+        ) as kotlinx.serialization.json.JsonArray
+        val decoy = dev.gladix.desktop.core.pickReleaseAsset(withDecoys, "Windows 11", "amd64")
+        if (decoy != "u-win") error("a checksum file was picked instead of the archive: $decoy")
         println("      windows=u-win linux=u-linux macos-arm=u-mac-arm macos-x64=u-mac-x64")
     }
 
@@ -475,6 +483,21 @@ fun main(args: Array<String>) {
         if (s(true, "1.4.8", null, "1.4.8") != UpdateChecker.State.Downloaded) error("downloaded update should stay downloaded")
         // A newer release must not reuse the older staging copy.
         if (s(true, "1.4.9", "1.4.8", null) != UpdateChecker.State.Available) error("an old staging copy was reused")
+    }
+
+    check("a running download is not disturbed by a second check") {
+        fun blocked(state: UpdateChecker.State) = dev.gladix.desktop.core.blocksCheck(state)
+
+        if (!blocked(UpdateChecker.State.Checking)) error("a second check was allowed")
+        if (!blocked(UpdateChecker.State.Downloading)) error("a check during download was allowed")
+        if (!blocked(UpdateChecker.State.Extracting)) error("a check during extraction was allowed")
+        if (!blocked(UpdateChecker.State.Applying)) error("a check during the swap was allowed")
+        // These can be checked again: a newer release may have appeared.
+        listOf(
+            UpdateChecker.State.Idle, UpdateChecker.State.UpToDate,
+            UpdateChecker.State.Available, UpdateChecker.State.Ready,
+            UpdateChecker.State.Downloaded, UpdateChecker.State.Failed
+        ).forEach { if (blocked(it)) error("$it should not block a check") }
     }
 
     check("an app image is recognised on every platform") {
