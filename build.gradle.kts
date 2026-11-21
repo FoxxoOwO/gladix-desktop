@@ -7,5 +7,5 @@ plugins {
 
 subprojects {
     group = "dev.gladix"
-    version = "1.4.9"
+    version = "1.4.10"
 }

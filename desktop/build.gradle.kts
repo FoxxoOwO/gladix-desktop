@@ -82,7 +82,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(*hostFormats.toTypedArray())
             packageName = "Gladix"
-            packageVersion = "1.4.9"
+            packageVersion = "1.4.10"
             description = "Gladix - Deezer music player"
             vendor = "Gladix Desktop"
 
