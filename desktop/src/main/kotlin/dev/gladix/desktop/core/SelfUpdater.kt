@@ -77,7 +77,7 @@ object InstallLocation {
  * new one in, verifies `Gladix.exe`, removes the backup and — optionally —
  * starts the new build. If anything fails it rolls the old image back.
  */
-class SelfUpdater(private val installRoot: File? = InstallLocation.root) {
+class SelfUpdater(val installRoot: File? = InstallLocation.root) {
 
     /** Folder holding downloaded ZIPs and the unpacked staging image. */
     val stagingRoot: File = File(AppPaths.root, "updates")
@@ -135,6 +135,18 @@ class SelfUpdater(private val installRoot: File? = InstallLocation.root) {
 
     /** True when the install folder can be replaced without elevation. */
     fun canWriteWithoutElevation(): Boolean = installRoot?.let { canWrite(it) } == true
+
+    /**
+     * True when the swap can run with the rights the app already has: Windows
+     * escalates on its own, elsewhere the folder holding the image must be
+     * writable because both moves are renames.
+     */
+    val canInstallInPlace: Boolean
+        get() {
+            val root = installRoot ?: return false
+            val target = if (windows) root else (root.parentFile ?: return false)
+            return canWrite(target)
+        }
 
     /**
      * Writes and starts the swap script. [restart] relaunches Gladix once the
